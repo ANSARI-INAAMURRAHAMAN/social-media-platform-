@@ -12,6 +12,8 @@ router.use('/posts', require('./posts'));
 router.use('/comments', require('./comments'));
 router.use('/likes', require('./likes'));
 router.use('/activity', require('./activity'));
+router.use('/follow', require('./follow'));
+router.use('/discover', require('./discovery'));
 
 
 router.use('/api', require('./api'));

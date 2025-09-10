@@ -5,6 +5,9 @@ import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import api from '@/lib/api'
 import PostCard from '@/components/PostCard'
+import BottomNavigation from '@/components/BottomNavigation'
+import UserList from '@/components/UserList'
+import FollowButton from '@/components/FollowButton'
 
 interface User {
   _id: string
@@ -12,11 +15,14 @@ interface User {
   email: string
   username?: string
   avatar?: string
+  followersCount?: number
+  followingCount?: number
 }
 
 interface Post {
   _id: string
   content: string
+  image?: string
   user: User
   comments: any[]
   likes: any[]
@@ -32,16 +38,28 @@ export default function UserProfilePage() {
   const [posts, setPosts] = useState<Post[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState('')
-  const [activeTab, setActiveTab] = useState<'posts' | 'about'>('posts')
-  const [isFollowing, setIsFollowing] = useState(false)
+  const [activeTab, setActiveTab] = useState<'posts' | 'followers' | 'following' | 'about'>('posts')
+  const [followStatus, setFollowStatus] = useState<any>(null)
   const [currentUser, setCurrentUser] = useState<User | null>(null)
 
   useEffect(() => {
     if (userId) {
       fetchUserProfile()
       fetchCurrentUser()
+      fetchFollowStatus()
     }
   }, [userId])
+
+  const fetchFollowStatus = async () => {
+    try {
+      const response = await api.get(`/follow/status/${userId}`)
+      if (response.data.success) {
+        setFollowStatus(response.data.data)
+      }
+    } catch (error) {
+      console.error('Error fetching follow status:', error)
+    }
+  }
 
   const fetchCurrentUser = async () => {
     try {
@@ -84,14 +102,12 @@ export default function UserProfilePage() {
     }
   }
 
-  const handleFollow = async () => {
-    try {
-      // Implement follow/unfollow logic here
-      // This would need backend API endpoints for friendship management
-      setIsFollowing(!isFollowing)
-    } catch (error) {
-      console.error('Error following user:', error)
-    }
+  const handleFollowChange = (isFollowing: boolean, newFollowersCount: number) => {
+    setUser(prev => prev ? {
+      ...prev,
+      followersCount: newFollowersCount
+    } : null)
+    fetchFollowStatus() // Refresh follow status
   }
 
   const goBack = () => {
@@ -149,7 +165,7 @@ export default function UserProfilePage() {
           <button onClick={goBack} className="text-gray-600 hover:text-gray-900">
             ← Back
           </button>
-          <h1 className="text-xl font-bold text-gray-900">{user.name}</h1>
+          <h1 className="text-xl font-bold text-gray-900">{user.name || 'User Profile'}</h1>
           <div className="w-6"></div>
         </div>
       </header>
@@ -162,15 +178,15 @@ export default function UserProfilePage() {
               {user.avatar ? (
                 <img 
                   src={`http://localhost:8000${user.avatar}`} 
-                  alt={user.name}
+                  alt={user.name || 'User'}
                   className="w-20 h-20 rounded-full object-cover"
                 />
               ) : (
-                user.name.charAt(0).toUpperCase()
+                user.name && user.name.length > 0 ? user.name.charAt(0).toUpperCase() : '?'
               )}
             </div>
             <div className="flex-1">
-              <h2 className="text-xl font-bold text-gray-900">{user.name}</h2>
+              <h2 className="text-xl font-bold text-gray-900">{user.name || 'Unknown User'}</h2>
               <p className="text-gray-600">{user.email}</p>
             </div>
           </div>
@@ -182,11 +198,11 @@ export default function UserProfilePage() {
               <div className="text-gray-600 text-sm">Posts</div>
             </div>
             <div>
-              <div className="text-xl font-bold text-gray-900">0</div>
+              <div className="text-xl font-bold text-gray-900">{followStatus?.followersCount || 0}</div>
               <div className="text-gray-600 text-sm">Followers</div>
             </div>
             <div>
-              <div className="text-xl font-bold text-gray-900">0</div>
+              <div className="text-xl font-bold text-gray-900">{followStatus?.followingCount || 0}</div>
               <div className="text-gray-600 text-sm">Following</div>
             </div>
           </div>
@@ -194,16 +210,14 @@ export default function UserProfilePage() {
           {/* Action Buttons */}
           {!isOwnProfile && (
             <div className="flex space-x-2">
-              <button
-                onClick={handleFollow}
-                className={`flex-1 py-2 px-4 rounded-lg font-medium ${
-                  isFollowing
-                    ? 'bg-gray-200 text-gray-800 hover:bg-gray-300'
-                    : 'bg-instagram-blue text-white hover:bg-blue-600'
-                }`}
-              >
-                {isFollowing ? 'Following' : 'Follow'}
-              </button>
+              <div className="flex-1">
+                <FollowButton 
+                  userId={userId}
+                  initialIsFollowing={followStatus?.isFollowing}
+                  onFollowChange={handleFollowChange}
+                  className="w-full"
+                />
+              </div>
               <button className="flex-1 py-2 px-4 bg-gray-200 text-gray-800 rounded-lg font-medium hover:bg-gray-300">
                 Message
               </button>
@@ -223,26 +237,46 @@ export default function UserProfilePage() {
       {/* Tabs */}
       <div className="bg-white border-b border-gray-200">
         <div className="max-w-md mx-auto px-4">
-          <div className="flex space-x-8">
+          <div className="flex space-x-4">
             <button
               onClick={() => setActiveTab('posts')}
-              className={`py-3 text-sm font-medium border-b-2 ${
+              className={`py-3 text-xs font-medium border-b-2 ${
                 activeTab === 'posts'
                   ? 'border-instagram-blue text-instagram-blue'
                   : 'border-transparent text-gray-600 hover:text-gray-900'
               }`}
             >
-              Posts
+              📱 Posts
+            </button>
+            <button
+              onClick={() => setActiveTab('followers')}
+              className={`py-3 text-xs font-medium border-b-2 ${
+                activeTab === 'followers'
+                  ? 'border-instagram-blue text-instagram-blue'
+                  : 'border-transparent text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              👥 Followers
+            </button>
+            <button
+              onClick={() => setActiveTab('following')}
+              className={`py-3 text-xs font-medium border-b-2 ${
+                activeTab === 'following'
+                  ? 'border-instagram-blue text-instagram-blue'
+                  : 'border-transparent text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              👤 Following
             </button>
             <button
               onClick={() => setActiveTab('about')}
-              className={`py-3 text-sm font-medium border-b-2 ${
+              className={`py-3 text-xs font-medium border-b-2 ${
                 activeTab === 'about'
                   ? 'border-instagram-blue text-instagram-blue'
                   : 'border-transparent text-gray-600 hover:text-gray-900'
               }`}
             >
-              About
+              ℹ️ About
             </button>
           </div>
         </div>
@@ -257,7 +291,7 @@ export default function UserProfilePage() {
                 <div className="text-4xl mb-4">📸</div>
                 <h3 className="text-lg font-semibold text-gray-900 mb-2">No posts yet</h3>
                 <p className="text-gray-600">
-                  {isOwnProfile ? "Share your first post!" : `${user.name} hasn't shared any posts yet.`}
+                  {isOwnProfile ? "Share your first post!" : `${user.name || 'This user'} hasn't shared any posts yet.`}
                 </p>
                 {isOwnProfile && (
                   <Link href="/create" className="btn-primary inline-block mt-4">
@@ -266,7 +300,7 @@ export default function UserProfilePage() {
                 )}
               </div>
             ) : (
-              <div className="space-y-1">
+              <div className="space-y-1 px-4">
                 {posts.map((post) => (
                   <PostCard 
                     key={post._id} 
@@ -279,9 +313,21 @@ export default function UserProfilePage() {
           </div>
         )}
 
+        {activeTab === 'followers' && (
+          <div className="px-4">
+            <UserList userId={userId} type="followers" />
+          </div>
+        )}
+
+        {activeTab === 'following' && (
+          <div className="px-4">
+            <UserList userId={userId} type="following" />
+          </div>
+        )}
+
         {activeTab === 'about' && (
-          <div className="bg-white p-4">
-            <h3 className="font-semibold text-gray-900 mb-4">About {user.name}</h3>
+          <div className="bg-white p-4 mx-4 rounded-lg">
+            <h3 className="font-semibold text-gray-900 mb-4">About {user.name || 'User'}</h3>
             <div className="space-y-3">
               <div>
                 <span className="text-gray-600">Email:</span>
@@ -300,18 +346,8 @@ export default function UserProfilePage() {
         )}
       </div>
 
-      {/* Coming Soon Notice */}
-      <div className="mx-4 mt-8 bg-blue-50 border border-blue-200 rounded-lg p-4">
-        <div className="flex items-center space-x-2">
-          <span className="text-blue-500">ℹ️</span>
-          <div>
-            <h4 className="font-semibold text-blue-900">Coming Soon!</h4>
-            <p className="text-blue-700 text-sm">
-              Follow/unfollow functionality and user-specific APIs will be implemented with backend endpoints.
-            </p>
-          </div>
-        </div>
-      </div>
+      {/* Bottom Navigation */}
+      <BottomNavigation />
     </div>
   )
 }

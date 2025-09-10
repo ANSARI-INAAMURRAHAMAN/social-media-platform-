@@ -5,11 +5,13 @@ import Link from 'next/link'
 import api from '@/lib/api'
 import PostCard from '@/components/PostCard'
 import BottomNavigation from '@/components/BottomNavigation'
+import FollowButton from '@/components/FollowButton'
 import { useSearchParams } from 'next/navigation'
 
 interface Post {
   _id: string
   content: string
+  image?: string
   user?: {
     _id: string
     name?: string
@@ -20,8 +22,19 @@ interface Post {
   createdAt: string
 }
 
+interface SuggestedUser {
+  _id: string
+  name: string
+  email: string
+  username?: string
+  avatar?: string
+  isFollowing?: boolean
+  followersCount?: number
+}
+
 export default function FeedPage() {
   const [posts, setPosts] = useState<Post[]>([])
+  const [suggestedUsers, setSuggestedUsers] = useState<SuggestedUser[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState('')
   const [refreshing, setRefreshing] = useState(false)
@@ -59,7 +72,19 @@ export default function FeedPage() {
     }
     
     fetchPosts()
+    fetchSuggestedUsers()
   }, [mounted, searchParams])
+
+  const fetchSuggestedUsers = async () => {
+    try {
+      const response = await api.get('/discover/suggested?limit=3')
+      if (response.data.success) {
+        setSuggestedUsers(response.data.data.users)
+      }
+    } catch (error: any) {
+      console.error('Error fetching suggested users:', error)
+    }
+  }
 
   const fetchPosts = async () => {
     try {
@@ -79,6 +104,7 @@ export default function FeedPage() {
   const handleRefresh = () => {
     setRefreshing(true)
     fetchPosts()
+    fetchSuggestedUsers()
   }
 
   const handlePostUpdate = (updatedPost: Post) => {
@@ -118,6 +144,9 @@ export default function FeedPage() {
             >
               {refreshing ? '🔄' : '↻'}
             </button>
+            <Link href="/discover" className="text-gray-600 hover:text-instagram-blue">
+              🔍
+            </Link>
             <Link href="/create" className="text-gray-600 hover:text-instagram-blue">
               ➕
             </Link>
@@ -163,6 +192,47 @@ export default function FeedPage() {
           </div>
         ) : (
           <div className="px-4">
+            {/* Suggested Users Section */}
+            {suggestedUsers.length > 0 && (
+              <div className="bg-white rounded-lg p-4 mb-4 border border-gray-100">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="font-semibold text-gray-900">People you may know</h3>
+                  <Link href="/discover" className="text-sm text-instagram-blue hover:underline">
+                    See all
+                  </Link>
+                </div>
+                <div className="space-y-3">
+                  {suggestedUsers.map((user) => (
+                    <div key={user._id} className="flex items-center justify-between">
+                      <div className="flex items-center space-x-3">
+                        <Link href={`/profile/${user._id}`}>
+                          <div className="w-10 h-10 bg-gradient-to-r from-blue-400 to-purple-400 rounded-full flex items-center justify-center text-white font-semibold cursor-pointer hover:scale-105 transition-transform">
+                            {user.name && user.name.length > 0 ? user.name[0].toUpperCase() : '?'}
+                          </div>
+                        </Link>
+                        <div>
+                          <Link href={`/profile/${user._id}`}>
+                            <p className="font-medium text-gray-900 hover:text-instagram-blue cursor-pointer">
+                              {user.name || 'Unknown User'}
+                            </p>
+                          </Link>
+                          <p className="text-xs text-gray-500">
+                            {user.followersCount || 0} followers
+                          </p>
+                        </div>
+                      </div>
+                      <FollowButton 
+                        userId={user._id}
+                        initialIsFollowing={user.isFollowing}
+                        className="text-xs px-3 py-1"
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Posts */}
             {posts.map((post) => (
               <PostCard 
                 key={post._id} 

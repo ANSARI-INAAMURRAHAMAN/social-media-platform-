@@ -5,6 +5,7 @@ import Link from 'next/link'
 import api from '@/lib/api'
 import PostCard from '@/components/PostCard'
 import BottomNavigation from '@/components/BottomNavigation'
+import UserList from '@/components/UserList'
 
 interface User {
   _id: string
@@ -12,6 +13,8 @@ interface User {
   email: string
   username?: string
   avatar?: string
+  followersCount?: number
+  followingCount?: number
 }
 
 interface Post {
@@ -28,7 +31,7 @@ export default function ProfilePage() {
   const [posts, setPosts] = useState<Post[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState('')
-  const [activeTab, setActiveTab] = useState<'posts' | 'about'>('posts')
+  const [activeTab, setActiveTab] = useState<'posts' | 'about' | 'followers' | 'following'>('posts')
 
   useEffect(() => {
     fetchUserProfile()
@@ -105,7 +108,7 @@ export default function ProfilePage() {
           <Link href="/feed" className="text-instagram-blue">
             ← Back
           </Link>
-          <h1 className="text-lg font-semibold">{user.name}</h1>
+          <h1 className="text-lg font-semibold">{user.name || 'Profile'}</h1>
           <button 
             onClick={handleLogout}
             className="text-gray-600 hover:text-red-500 text-sm"
@@ -121,7 +124,7 @@ export default function ProfilePage() {
           <div className="flex items-center space-x-4 mb-4">
             {/* Profile Picture */}
             <div className="w-20 h-20 bg-gradient-to-r from-purple-400 via-pink-500 to-red-500 rounded-full flex items-center justify-center text-white text-2xl font-bold">
-              {user.name[0].toUpperCase()}
+              {user.name && user.name.length > 0 ? user.name[0].toUpperCase() : '?'}
             </div>
             
             {/* Stats */}
@@ -131,12 +134,12 @@ export default function ProfilePage() {
                   <div className="font-semibold text-lg">{posts.length}</div>
                   <div className="text-gray-600 text-sm">Posts</div>
                 </div>
-                <div>
-                  <div className="font-semibold text-lg">0</div>
+                <div className="cursor-pointer hover:opacity-75" onClick={() => setActiveTab('followers')}>
+                  <div className="font-semibold text-lg">{user.followersCount || 0}</div>
                   <div className="text-gray-600 text-sm">Followers</div>
                 </div>
-                <div>
-                  <div className="font-semibold text-lg">0</div>
+                <div className="cursor-pointer hover:opacity-75" onClick={() => setActiveTab('following')}>
+                  <div className="font-semibold text-lg">{user.followingCount || 0}</div>
                   <div className="text-gray-600 text-sm">Following</div>
                 </div>
               </div>
@@ -145,7 +148,7 @@ export default function ProfilePage() {
 
           {/* User Info */}
           <div className="mb-4">
-            <h2 className="font-semibold text-lg">{user.name}</h2>
+            <h2 className="font-semibold text-lg">{user.name || 'Unknown User'}</h2>
             <p className="text-gray-600 text-sm">{user.email}</p>
           </div>
 
@@ -169,7 +172,7 @@ export default function ProfilePage() {
           <div className="flex">
             <button
               onClick={() => setActiveTab('posts')}
-              className={`flex-1 py-3 text-center text-sm font-medium border-b-2 ${
+              className={`flex-1 py-3 text-center text-xs font-medium border-b-2 ${
                 activeTab === 'posts'
                   ? 'border-instagram-blue text-instagram-blue'
                   : 'border-transparent text-gray-600'
@@ -178,8 +181,28 @@ export default function ProfilePage() {
               📱 POSTS
             </button>
             <button
+              onClick={() => setActiveTab('followers')}
+              className={`flex-1 py-3 text-center text-xs font-medium border-b-2 ${
+                activeTab === 'followers'
+                  ? 'border-instagram-blue text-instagram-blue'
+                  : 'border-transparent text-gray-600'
+              }`}
+            >
+              👥 FOLLOWERS
+            </button>
+            <button
+              onClick={() => setActiveTab('following')}
+              className={`flex-1 py-3 text-center text-xs font-medium border-b-2 ${
+                activeTab === 'following'
+                  ? 'border-instagram-blue text-instagram-blue'
+                  : 'border-transparent text-gray-600'
+              }`}
+            >
+              👤 FOLLOWING
+            </button>
+            <button
               onClick={() => setActiveTab('about')}
-              className={`flex-1 py-3 text-center text-sm font-medium border-b-2 ${
+              className={`flex-1 py-3 text-center text-xs font-medium border-b-2 ${
                 activeTab === 'about'
                   ? 'border-instagram-blue text-instagram-blue'
                   : 'border-transparent text-gray-600'
@@ -214,6 +237,14 @@ export default function ProfilePage() {
               </div>
             )}
           </div>
+        ) : activeTab === 'followers' ? (
+          <div className="px-4">
+            <UserList userId={user._id} type="followers" />
+          </div>
+        ) : activeTab === 'following' ? (
+          <div className="px-4">
+            <UserList userId={user._id} type="following" />
+          </div>
         ) : (
           <div className="px-4">
             <div className="card p-6">
@@ -221,7 +252,7 @@ export default function ProfilePage() {
               <div className="space-y-3">
                 <div>
                   <label className="text-sm font-medium text-gray-600">Name</label>
-                  <p className="text-gray-900">{user.name}</p>
+                  <p className="text-gray-900">{user.name || 'No name set'}</p>
                 </div>
                 <div>
                   <label className="text-sm font-medium text-gray-600">Email</label>

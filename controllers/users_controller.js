@@ -1,9 +1,10 @@
 const User = require('../models/user');
+const Friendship = require('../models/friendship');
 const fs = require('fs');
 const path = require('path');
 
 // let's keep it same as before
-module.exports.profile = function(req, res){
+module.exports.profile = async function(req, res){
     if (!req.user) {
         return res.status(401).json({
             success: false,
@@ -11,21 +12,18 @@ module.exports.profile = function(req, res){
         });
     }
 
-    User.findById(req.user._id, function(err, user){
-        if (err) {
-            return res.status(500).json({
-                success: false,
-                message: 'Error fetching user profile',
-                error: err
-            });
-        }
-
+    try {
+        const user = await User.findById(req.user._id);
         if (!user) {
             return res.status(404).json({
                 success: false,
                 message: 'User not found'
             });
         }
+
+        // Get follow counts
+        const followersCount = await Friendship.getFollowersCount(user._id);
+        const followingCount = await Friendship.getFollowingCount(user._id);
 
         return res.status(200).json({
             success: true,
@@ -36,11 +34,19 @@ module.exports.profile = function(req, res){
                     name: user.name,
                     email: user.email,
                     username: user.username,
-                    avatar: user.avatar
+                    avatar: user.avatar,
+                    followersCount: followersCount,
+                    followingCount: followingCount
                 }
             }
         });
-    });
+    } catch (err) {
+        return res.status(500).json({
+            success: false,
+            message: 'Error fetching user profile',
+            error: err
+        });
+    }
 }
 
 

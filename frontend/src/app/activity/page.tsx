@@ -92,11 +92,11 @@ export default function ActivityPage() {
             {user.avatar ? (
               <img 
                 src={`http://localhost:8000${user.avatar}`} 
-                alt={user.name}
+                alt={user.name || 'User'}
                 className="w-10 h-10 rounded-full object-cover"
               />
             ) : (
-              user.name.charAt(0).toUpperCase()
+              user.name && user.name.length > 0 ? user.name.charAt(0).toUpperCase() : '?'
             )}
           </div>
         </Link>
@@ -104,7 +104,7 @@ export default function ActivityPage() {
         <div className="flex-1">
           <div className="flex items-center space-x-1">
             <Link href={`/profile/${user._id}`} className="font-semibold text-gray-900 hover:underline">
-              {user.name}
+              {user.name || 'Unknown User'}
             </Link>
             <span className="text-gray-600">
               {activity.type === 'like' && 'liked your post'}
