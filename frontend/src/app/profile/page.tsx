@@ -151,9 +151,11 @@ export default function ProfilePage() {
 
           {/* Action Buttons */}
           <div className="flex space-x-2">
-            <button className="flex-1 btn-secondary text-sm">
-              Edit Profile
-            </button>
+            <Link href="/profile/edit" className="flex-1">
+              <button className="w-full btn-secondary text-sm">
+                Edit Profile
+              </button>
+            </Link>
             <button className="flex-1 btn-secondary text-sm">
               Share Profile
             </button>

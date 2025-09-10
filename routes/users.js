@@ -9,6 +9,10 @@ router.get('/profile', passport.checkAuthentication, usersController.profile);
 router.get('/profile/:id', passport.checkAuthentication, usersController.profile);
 router.post('/update/:id', passport.checkAuthentication, usersController.update);
 
+// Add a new route for updating the current user's profile without ID parameter
+const profileController = require('../controllers/profile_controller');
+router.post('/update', passport.checkAuthentication, profileController.updateUser);
+
 // API endpoint to check if user is authenticated
 router.get('/auth/status', (req, res) => {
     if (req.isAuthenticated()) {

@@ -8,7 +8,6 @@ export default function BottomNavigation() {
 
   const navItems = [
     { href: '/feed', icon: '🏠', label: 'Home' },
-    { href: '/search', icon: '�', label: 'Search' },
     { href: '/create', icon: '➕', label: 'Create' },
     { href: '/activity', icon: '❤️', label: 'Activity' },
     { href: '/profile', icon: '👤', label: 'Profile' },
@@ -22,14 +21,14 @@ export default function BottomNavigation() {
             <Link
               key={item.href}
               href={item.href}
-              className={`flex flex-col items-center py-2 px-3 rounded-lg transition-colors ${
+              className={`flex flex-col items-center px-2 py-1 text-xs ${
                 pathname === item.href
-                  ? 'text-instagram-blue bg-blue-50'
-                  : 'text-gray-600 hover:text-instagram-blue hover:bg-gray-50'
+                  ? 'text-blue-500'
+                  : 'text-gray-500 hover:text-blue-500'
               }`}
             >
-              <span className="text-xl mb-1">{item.icon}</span>
-              <span className="text-xs font-medium">{item.label}</span>
+              <span className="text-xl">{item.icon}</span>
+              <span className="mt-1">{item.label}</span>
             </Link>
           ))}
         </div>

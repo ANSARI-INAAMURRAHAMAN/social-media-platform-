@@ -56,7 +56,9 @@ export default function ActivityPage() {
 
       const data = await response.json()
       if (data.success) {
-        setActivities(data.data.activities || [])
+        // Handle both response formats - either data.data.activities or data.activities
+        const activitiesData = data.data?.activities || data.activities || []
+        setActivities(activitiesData)
       } else {
         setError(data.message || 'Failed to load activities')
       }
@@ -206,8 +208,8 @@ export default function ActivityPage() {
                 : 'Activity from people you follow will appear here.'
               }
             </p>
-            <Link href="/search" className="btn-primary inline-block">
-              Discover people
+            <Link href="/feed" className="btn-primary inline-block">
+              Go to Feed
             </Link>
           </div>
         ) : (
