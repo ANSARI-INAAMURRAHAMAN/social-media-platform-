@@ -8,10 +8,47 @@ import { useRouter } from 'next/navigation'
 
 export default function CreatePostPage() {
   const [content, setContent] = useState('')
+  const [selectedImage, setSelectedImage] = useState<File | null>(null)
+  const [imagePreview, setImagePreview] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
   const router = useRouter()
+
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        setError('Please select an image file')
+        return
+      }
+      
+      // Validate file size (5MB limit)
+      if (file.size > 5 * 1024 * 1024) {
+        setError('Image size should be less than 5MB')
+        return
+      }
+      
+      setSelectedImage(file)
+      
+      // Create preview
+      const reader = new FileReader()
+      reader.onload = (e) => {
+        setImagePreview(e.target?.result as string)
+      }
+      reader.readAsDataURL(file)
+      setError('')
+    }
+  }
+
+  const removeImage = () => {
+    setSelectedImage(null)
+    setImagePreview(null)
+    // Reset file input
+    const fileInput = document.getElementById('image-input') as HTMLInputElement
+    if (fileInput) fileInput.value = ''
+  }
 
   const handleCreatePost = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -19,20 +56,31 @@ export default function CreatePostPage() {
     setError('')
     setSuccess('')
 
-    if (!content.trim()) {
-      setError('Please write something for your post')
+    if (!content.trim() && !selectedImage) {
+      setError('Please write something or add an image for your post')
       setIsLoading(false)
       return
     }
 
     try {
-      const response = await api.post('/posts/create', {
-        content: content.trim()
+      // Create FormData for multipart upload
+      const formData = new FormData()
+      formData.append('content', content.trim())
+      
+      if (selectedImage) {
+        formData.append('image', selectedImage)
+      }
+
+      const response = await api.post('/posts/create', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
       })
 
       if (response.data.success) {
         setSuccess('Post created successfully!')
         setContent('')
+        removeImage()
         // Redirect to feed after 2 seconds
         setTimeout(() => {
           router.push('/feed')
@@ -100,9 +148,51 @@ export default function CreatePostPage() {
               </div>
             </div>
 
+            {/* Image Upload Section */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Add a photo (optional)
+              </label>
+              
+              {!imagePreview ? (
+                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-instagram-blue transition-colors">
+                  <input
+                    id="image-input"
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageSelect}
+                    className="hidden"
+                  />
+                  <label
+                    htmlFor="image-input"
+                    className="cursor-pointer flex flex-col items-center"
+                  >
+                    <div className="text-4xl mb-2">📷</div>
+                    <p className="text-sm text-gray-600 mb-1">Click to add a photo</p>
+                    <p className="text-xs text-gray-500">JPG, PNG up to 5MB</p>
+                  </label>
+                </div>
+              ) : (
+                <div className="relative">
+                  <img
+                    src={imagePreview}
+                    alt="Preview"
+                    className="w-full max-h-64 object-cover rounded-lg"
+                  />
+                  <button
+                    type="button"
+                    onClick={removeImage}
+                    className="absolute top-2 right-2 bg-red-500 text-white rounded-full w-8 h-8 flex items-center justify-center hover:bg-red-600 transition-colors"
+                  >
+                    ✕
+                  </button>
+                </div>
+              )}
+            </div>
+
             <button
               type="submit"
-              disabled={isLoading || !content.trim()}
+              disabled={isLoading || (!content.trim() && !selectedImage)}
               className="w-full btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isLoading ? 'Posting...' : 'Share Post'}

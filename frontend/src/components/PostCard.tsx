@@ -21,6 +21,7 @@ interface Comment {
 interface Post {
   _id: string
   content: string
+  image?: string
   user?: User
   comments?: Comment[]
   likes?: any[]
@@ -298,6 +299,21 @@ export default function PostCard({ post, onPostUpdate, onPostDelete }: PostCardP
       {/* Post Content */}
       <div className="p-4">
         <p className="text-gray-900 whitespace-pre-wrap">{post.content}</p>
+        
+        {/* Post Image */}
+        {post.image && (
+          <div className="mt-3">
+            <img
+              src={`http://localhost:8000${post.image}`}
+              alt="Post content"
+              className="w-full rounded-lg object-cover max-h-96"
+              onError={(e) => {
+                console.error('Error loading image:', post.image)
+                e.currentTarget.style.display = 'none'
+              }}
+            />
+          </div>
+        )}
       </div>
 
       {/* Post Actions */}
