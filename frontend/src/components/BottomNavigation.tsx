@@ -8,13 +8,14 @@ export default function BottomNavigation() {
 
   const navItems = [
     { href: '/feed', icon: '🏠', label: 'Home' },
-    { href: '/chat', icon: '💬', label: 'Chat' },
+    { href: '/search', icon: '�', label: 'Search' },
     { href: '/create', icon: '➕', label: 'Create' },
+    { href: '/activity', icon: '❤️', label: 'Activity' },
     { href: '/profile', icon: '👤', label: 'Profile' },
   ]
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-10">
+    <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50">
       <div className="max-w-md mx-auto px-4 py-2">
         <div className="flex justify-around">
           {navItems.map((item) => (

@@ -1,5 +1,8 @@
 const mongoose = require('mongoose');
 
+// Set strictQuery to false to suppress the deprecation warning
+mongoose.set('strictQuery', false);
+
 // Use environment variable for MongoDB connection
 const mongoURI = process.env.MONGO_URI || 'mongodb://localhost/codeial_development';
 mongoose.connect(mongoURI);

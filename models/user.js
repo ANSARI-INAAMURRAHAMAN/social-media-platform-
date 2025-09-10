@@ -18,6 +18,11 @@ const userSchema = new mongoose.Schema({
         type: String,
         required: true
     },
+    username: {
+        type: String,
+        unique: true,
+        sparse: true // This allows null values but still enforces uniqueness when present
+    },
     avatar: {
         type: String
     },

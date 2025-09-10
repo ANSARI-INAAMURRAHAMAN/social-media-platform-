@@ -4,11 +4,13 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import api from '@/lib/api'
 import PostCard from '@/components/PostCard'
+import BottomNavigation from '@/components/BottomNavigation'
 
 interface User {
   _id: string
   name: string
   email: string
+  username?: string
   avatar?: string
 }
 
@@ -234,32 +236,7 @@ export default function ProfilePage() {
       </div>
 
       {/* Bottom Navigation */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-10">
-        <div className="max-w-md mx-auto px-4 py-3">
-          <div className="flex justify-around">
-            <Link href="/feed" className="flex flex-col items-center text-gray-600 hover:text-instagram-blue">
-              <span className="text-xl">🏠</span>
-              <span className="text-xs">Home</span>
-            </Link>
-            <button className="flex flex-col items-center text-gray-600 hover:text-instagram-blue">
-              <span className="text-xl">🔍</span>
-              <span className="text-xs">Search</span>
-            </button>
-            <Link href="/create" className="flex flex-col items-center text-gray-600 hover:text-instagram-blue">
-              <span className="text-xl">➕</span>
-              <span className="text-xs">Create</span>
-            </Link>
-            <button className="flex flex-col items-center text-gray-600 hover:text-instagram-blue">
-              <span className="text-xl">❤️</span>
-              <span className="text-xs">Activity</span>
-            </button>
-            <Link href="/profile" className="flex flex-col items-center text-instagram-blue">
-              <span className="text-xl">👤</span>
-              <span className="text-xs">Profile</span>
-            </Link>
-          </div>
-        </div>
-      </div>
+      <BottomNavigation />
     </div>
   )
 }

@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import api from '@/lib/api'
+import BottomNavigation from '@/components/BottomNavigation'
 import { useRouter } from 'next/navigation'
 
 export default function CreatePostPage() {
@@ -119,6 +120,9 @@ export default function CreatePostPage() {
           </ul>
         </div>
       </div>
+
+      {/* Bottom Navigation */}
+      <BottomNavigation />
     </div>
   )
 }

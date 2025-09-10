@@ -1,9 +1,9 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import api from '@/lib/api'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
@@ -11,6 +11,42 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
   const router = useRouter()
+  const searchParams = useSearchParams()
+
+  useEffect(() => {
+    // Check for OAuth errors in URL params
+    const oauthError = searchParams.get('error')
+    if (oauthError) {
+      switch (oauthError) {
+        case 'oauth_error':
+          setError('Google authentication failed. Please try again.')
+          break
+        case 'oauth_failed':
+          setError('Google login was unsuccessful. Please try again.')
+          break
+        case 'login_failed':
+          setError('Login failed after Google authentication.')
+          break
+        default:
+          setError('Authentication error occurred.')
+      }
+    }
+
+    // Check if user is already authenticated
+    checkAuthStatus()
+  }, [])
+
+  const checkAuthStatus = async () => {
+    try {
+      const response = await api.get('/users/auth/status')
+      if (response.data.authenticated) {
+        router.push('/feed')
+      }
+    } catch (error) {
+      // User not authenticated, continue with login page
+      console.log('User not authenticated')
+    }
+  }
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()

@@ -4,17 +4,19 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import api from '@/lib/api'
 import PostCard from '@/components/PostCard'
+import BottomNavigation from '@/components/BottomNavigation'
+import { useSearchParams } from 'next/navigation'
 
 interface Post {
   _id: string
   content: string
-  user: {
+  user?: {
     _id: string
-    name: string
+    name?: string
     email: string
   }
-  comments: any[]
-  likes: any[]
+  comments?: any[]
+  likes?: any[]
   createdAt: string
 }
 
@@ -23,10 +25,41 @@ export default function FeedPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState('')
   const [refreshing, setRefreshing] = useState(false)
+  const [successMessage, setSuccessMessage] = useState('')
+  const [mounted, setMounted] = useState(false)
+  const searchParams = useSearchParams()
 
   useEffect(() => {
-    fetchPosts()
+    setMounted(true)
   }, [])
+
+  useEffect(() => {
+    // Only check URL params after component is mounted on client
+    if (mounted) {
+      const authSuccess = searchParams.get('auth')
+      const userParam = searchParams.get('user')
+      
+      if (authSuccess === 'success') {
+        setSuccessMessage('Successfully logged in with Google!')
+        
+        // Store user data in localStorage if provided
+        if (userParam) {
+          try {
+            const userData = JSON.parse(decodeURIComponent(userParam))
+            localStorage.setItem('user', JSON.stringify(userData))
+            console.log('User data stored:', userData)
+          } catch (error) {
+            console.error('Error parsing user data:', error)
+          }
+        }
+        
+        // Clear the message after 3 seconds
+        setTimeout(() => setSuccessMessage(''), 3000)
+      }
+    }
+    
+    fetchPosts()
+  }, [mounted, searchParams])
 
   const fetchPosts = async () => {
     try {
@@ -52,6 +85,10 @@ export default function FeedPage() {
     setPosts(posts.map(post => 
       post._id === updatedPost._id ? updatedPost : post
     ))
+  }
+
+  const handlePostDelete = (postId: string) => {
+    setPosts(posts.filter(post => post._id !== postId))
   }
 
   if (isLoading) {
@@ -90,6 +127,17 @@ export default function FeedPage() {
 
       {/* Feed */}
       <div className="max-w-md mx-auto py-4">
+        {successMessage && (
+          <div className="mx-4 mb-4 bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded">
+            {successMessage}
+            <button 
+              onClick={() => setSuccessMessage('')}
+              className="float-right text-green-700 hover:text-green-900"
+            >
+              ✕
+            </button>
+          </div>
+        )}
         {error && (
           <div className="mx-4 mb-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
             {error}
@@ -97,7 +145,7 @@ export default function FeedPage() {
               onClick={() => setError('')}
               className="float-right text-red-700 hover:text-red-900"
             >
-              ×
+              ✕
             </button>
           </div>
         )}
@@ -120,6 +168,7 @@ export default function FeedPage() {
                 key={post._id} 
                 post={post} 
                 onPostUpdate={handlePostUpdate}
+                onPostDelete={handlePostDelete}
               />
             ))}
           </div>
@@ -127,32 +176,7 @@ export default function FeedPage() {
       </div>
 
       {/* Bottom Navigation */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-10">
-        <div className="max-w-md mx-auto px-4 py-3">
-          <div className="flex justify-around">
-            <Link href="/feed" className="flex flex-col items-center text-instagram-blue">
-              <span className="text-xl">🏠</span>
-              <span className="text-xs">Home</span>
-            </Link>
-            <button className="flex flex-col items-center text-gray-600 hover:text-instagram-blue">
-              <span className="text-xl">🔍</span>
-              <span className="text-xs">Search</span>
-            </button>
-            <Link href="/create" className="flex flex-col items-center text-gray-600 hover:text-instagram-blue">
-              <span className="text-xl">➕</span>
-              <span className="text-xs">Create</span>
-            </Link>
-            <button className="flex flex-col items-center text-gray-600 hover:text-instagram-blue">
-              <span className="text-xl">❤️</span>
-              <span className="text-xs">Activity</span>
-            </button>
-            <button className="flex flex-col items-center text-gray-600 hover:text-instagram-blue">
-              <span className="text-xl">👤</span>
-              <span className="text-xs">Profile</span>
-            </button>
-          </div>
-        </div>
-      </div>
+      <BottomNavigation />
     </div>
   )
 }

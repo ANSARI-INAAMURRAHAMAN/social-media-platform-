@@ -11,7 +11,10 @@ module.exports.home = async function(req, res){
             path: 'comments',
             populate: {
                 path: 'user'
-            },
+            }
+        })
+        .populate({
+            path: 'comments',
             populate: {
                 path: 'likes'
             }

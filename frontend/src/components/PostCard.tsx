@@ -1,42 +1,123 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import api from '@/lib/api'
 
 interface User {
   _id: string
-  name: string
+  name?: string
   email: string
+  username?: string
+  avatar?: string
 }
 
 interface Comment {
   _id: string
   content: string
-  user: User
+  user?: User
   createdAt: string
 }
 
 interface Post {
   _id: string
   content: string
-  user: User
-  comments: Comment[]
-  likes: any[]
+  user?: User
+  comments?: Comment[]
+  likes?: any[]
   createdAt: string
 }
 
 interface PostCardProps {
   post: Post
   onPostUpdate?: (updatedPost: Post) => void
+  onPostDelete?: (postId: string) => void
 }
 
-export default function PostCard({ post, onPostUpdate }: PostCardProps) {
+export default function PostCard({ post, onPostUpdate, onPostDelete }: PostCardProps) {
   const [showComments, setShowComments] = useState(false)
   const [newComment, setNewComment] = useState('')
   const [isLiked, setIsLiked] = useState(false)
-  const [likesCount, setLikesCount] = useState(post.likes.length)
-  const [comments, setComments] = useState(post.comments)
+  const [likesCount, setLikesCount] = useState(post.likes?.length || 0)
+  const [comments, setComments] = useState(post.comments || [])
   const [isSubmittingComment, setIsSubmittingComment] = useState(false)
+  const [showDropdown, setShowDropdown] = useState(false)
+  const [currentUser, setCurrentUser] = useState<any>(null)
+
+  useEffect(() => {
+    // Get current user from localStorage first, then try API
+    const fetchCurrentUser = async () => {
+      try {
+        // Try localStorage first
+        const storedUser = localStorage.getItem('user')
+        if (storedUser) {
+          const userData = JSON.parse(storedUser)
+          setCurrentUser(userData)
+          return
+        }
+
+        // Fallback to API if no localStorage data
+        const response = await api.get('/users/auth/status')
+        if (response.data.success && response.data.authenticated) {
+          setCurrentUser(response.data.user)
+          // Store in localStorage for future use
+          localStorage.setItem('user', JSON.stringify(response.data.user))
+        }
+      } catch (error) {
+        console.error('Error getting current user:', error)
+      }
+    }
+    fetchCurrentUser()
+  }, [])
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (showDropdown) {
+        setShowDropdown(false)
+      }
+    }
+
+    if (showDropdown) {
+      document.addEventListener('click', handleClickOutside)
+    }
+
+    return () => {
+      document.removeEventListener('click', handleClickOutside)
+    }
+  }, [showDropdown])
+
+  const handleDeletePost = async () => {
+    if (!window.confirm('Are you sure you want to delete this post?')) {
+      return
+    }
+
+    try {
+      // Try the session-based endpoint first
+      let response;
+      try {
+        response = await api.delete(`/posts/destroy/${post._id}`)
+      } catch (sessionError) {
+        console.log('Session-based delete failed, trying API v1:', sessionError)
+        // If session-based fails, try API v1 endpoint
+        response = await api.delete(`/api/v1/posts/${post._id}`)
+      }
+      
+      if (response.data.success) {
+        // Call parent callback to remove post from list
+        if (onPostDelete) {
+          onPostDelete(post._id)
+        }
+        alert('Post deleted successfully!')
+      } else {
+        throw new Error(response.data.message || 'Delete failed')
+      }
+    } catch (error: any) {
+      console.error('Error deleting post:', error)
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to delete post'
+      alert(`Failed to delete post: ${errorMessage}`)
+    }
+    setShowDropdown(false)
+  }
 
   const handleLike = async () => {
     try {
@@ -82,7 +163,15 @@ export default function PostCard({ post, onPostUpdate }: PostCardProps) {
     }
   }
 
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
   const formatTimeAgo = (dateString: string) => {
+    if (!mounted) return 'Loading...' // Prevent hydration mismatch
+    
     const date = new Date(dateString)
     const now = new Date()
     const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60))
@@ -102,15 +191,57 @@ export default function PostCard({ post, onPostUpdate }: PostCardProps) {
       <div className="p-4 border-b border-gray-100">
         <div className="flex items-center space-x-3">
           <div className="w-10 h-10 bg-gradient-to-r from-purple-400 to-pink-400 rounded-full flex items-center justify-center text-white font-semibold">
-            {post.user.name[0].toUpperCase()}
+            {post.user?.name?.[0]?.toUpperCase() || post.user?.email?.[0]?.toUpperCase() || 'U'}
           </div>
           <div className="flex-1">
-            <p className="font-semibold text-sm">{post.user.name}</p>
+            <p className="font-semibold text-sm">{post.user?.name || post.user?.email || 'Unknown User'}</p>
             <p className="text-xs text-gray-500">{formatTimeAgo(post.createdAt)}</p>
           </div>
-          <button className="text-gray-400 hover:text-gray-600">
-            ⋯
-          </button>
+          <div className="relative">
+            <button 
+              className="text-gray-400 hover:text-gray-600 p-2"
+              onClick={(e) => {
+                e.stopPropagation()
+                setShowDropdown(!showDropdown)
+              }}
+            >
+              ⋯
+            </button>
+            {showDropdown && (
+              <div 
+                className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-10 border"
+                onClick={(e) => e.stopPropagation()}
+              >
+                {/* Show delete option if user owns the post */}
+                {currentUser && (currentUser.id === post.user?._id || currentUser._id === post.user?._id) && (
+                  <button
+                    onClick={handleDeletePost}
+                    className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100"
+                  >
+                    Delete Post
+                  </button>
+                )}
+                
+                {/* Debug info for troubleshooting */}
+                <div className="px-4 py-2 text-xs text-gray-500 border-b">
+                  Current User: {currentUser ? `${currentUser.name || 'No name'} (${currentUser.id || currentUser._id || 'No ID'})` : 'Not logged in'}
+                </div>
+                <div className="px-4 py-2 text-xs text-gray-500 border-b">
+                  Post User: {post.user?.name || 'No name'} ({post.user?._id || 'No ID'})
+                </div>
+                <div className="px-4 py-2 text-xs text-gray-500 border-b">
+                  Match: {currentUser && (currentUser.id === post.user?._id || currentUser._id === post.user?._id) ? 'YES' : 'NO'}
+                </div>
+                
+                <button
+                  onClick={() => setShowDropdown(false)}
+                  className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                >
+                  Cancel
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
@@ -164,15 +295,15 @@ export default function PostCard({ post, onPostUpdate }: PostCardProps) {
         <div className="border-t border-gray-100">
           {/* Existing Comments */}
           <div className="max-h-60 overflow-y-auto">
-            {comments.map((comment) => (
+            {comments.filter(comment => comment && comment._id && comment.content).map((comment) => (
               <div key={comment._id} className="p-4 border-b border-gray-50 last:border-b-0">
                 <div className="flex space-x-3">
                   <div className="w-8 h-8 bg-gradient-to-r from-blue-400 to-purple-400 rounded-full flex items-center justify-center text-white text-xs font-semibold">
-                    {comment.user.name[0].toUpperCase()}
+                    {comment.user?.name?.[0]?.toUpperCase() || comment.user?.email?.[0]?.toUpperCase() || 'U'}
                   </div>
                   <div className="flex-1">
                     <div className="bg-gray-100 rounded-lg px-3 py-2">
-                      <p className="font-semibold text-sm">{comment.user.name}</p>
+                      <p className="font-semibold text-sm">{comment.user?.name || comment.user?.email || 'Unknown User'}</p>
                       <p className="text-sm text-gray-900">{comment.content}</p>
                     </div>
                     <p className="text-xs text-gray-500 mt-1">

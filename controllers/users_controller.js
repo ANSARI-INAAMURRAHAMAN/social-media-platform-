@@ -35,6 +35,7 @@ module.exports.profile = function(req, res){
                     _id: user._id,
                     name: user.name,
                     email: user.email,
+                    username: user.username,
                     avatar: user.avatar
                 }
             }
@@ -154,7 +155,15 @@ module.exports.create = function(req, res){
         }
 
         if (!user){
-            User.create(req.body, function(err, user){
+            // Generate a unique username from name or email
+            let username = req.body.name.toLowerCase().replace(/\s+/g, '') + Math.floor(Math.random() * 1000);
+            
+            const userData = {
+                ...req.body,
+                username: username
+            };
+            
+            User.create(userData, function(err, user){
                 if(err){
                     return res.status(500).json({
                         success: false,
@@ -170,7 +179,8 @@ module.exports.create = function(req, res){
                         user: {
                             _id: user._id,
                             name: user.name,
-                            email: user.email
+                            email: user.email,
+                            username: user.username
                         }
                     }
                 });
@@ -196,6 +206,7 @@ module.exports.createSession = function(req, res){
                 _id: req.user._id,
                 name: req.user.name,
                 email: req.user.email,
+                username: req.user.username,
                 avatar: req.user.avatar
             }
         }
