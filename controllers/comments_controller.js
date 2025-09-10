@@ -91,8 +91,8 @@ module.exports.destroy = async function(req, res){
 
         let postId = comment.post;
 
-        // Remove comment
-        await comment.remove();
+        // Remove comment using deleteOne instead of deprecated remove()
+        await Comment.findByIdAndDelete(req.params.id);
 
         // Update post to remove comment reference
         await Post.findByIdAndUpdate(postId, { $pull: {comments: req.params.id}});

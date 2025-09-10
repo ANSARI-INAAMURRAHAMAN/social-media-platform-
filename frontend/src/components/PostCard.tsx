@@ -41,6 +41,7 @@ export default function PostCard({ post, onPostUpdate, onPostDelete }: PostCardP
   const [comments, setComments] = useState(post.comments || [])
   const [isSubmittingComment, setIsSubmittingComment] = useState(false)
   const [showDropdown, setShowDropdown] = useState(false)
+  const [showCommentDropdowns, setShowCommentDropdowns] = useState<{[key: string]: boolean}>({})
   const [currentUser, setCurrentUser] = useState<any>(null)
 
   useEffect(() => {
@@ -75,16 +76,20 @@ export default function PostCard({ post, onPostUpdate, onPostDelete }: PostCardP
       if (showDropdown) {
         setShowDropdown(false)
       }
+      // Close all comment dropdowns
+      if (Object.keys(showCommentDropdowns).length > 0) {
+        setShowCommentDropdowns({})
+      }
     }
 
-    if (showDropdown) {
+    if (showDropdown || Object.keys(showCommentDropdowns).length > 0) {
       document.addEventListener('click', handleClickOutside)
     }
 
     return () => {
       document.removeEventListener('click', handleClickOutside)
     }
-  }, [showDropdown])
+  }, [showDropdown, showCommentDropdowns])
 
   const handleDeletePost = async () => {
     if (!window.confirm('Are you sure you want to delete this post?')) {
@@ -161,6 +166,51 @@ export default function PostCard({ post, onPostUpdate, onPostDelete }: PostCardP
     } finally {
       setIsSubmittingComment(false)
     }
+  }
+
+  const handleDeleteComment = async (commentId: string) => {
+    if (!window.confirm('Are you sure you want to delete this comment?')) {
+      return
+    }
+
+    try {
+      const response = await api.delete(`/comments/destroy/${commentId}`)
+      
+      if (response.data.success) {
+        // Remove comment from local state
+        const updatedComments = comments.filter(comment => comment._id !== commentId)
+        setComments(updatedComments)
+        
+        // Close the dropdown
+        setShowCommentDropdowns(prev => ({
+          ...prev,
+          [commentId]: false
+        }))
+        
+        // Update parent component if callback provided
+        if (onPostUpdate) {
+          onPostUpdate({
+            ...post,
+            comments: updatedComments
+          })
+        }
+        
+        alert('Comment deleted successfully!')
+      } else {
+        throw new Error(response.data.message || 'Delete failed')
+      }
+    } catch (error: any) {
+      console.error('Error deleting comment:', error)
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to delete comment'
+      alert(`Failed to delete comment: ${errorMessage}`)
+    }
+  }
+
+  const toggleCommentDropdown = (commentId: string) => {
+    setShowCommentDropdowns(prev => ({
+      ...prev,
+      [commentId]: !prev[commentId]
+    }))
   }
 
   const [mounted, setMounted] = useState(false)
@@ -303,8 +353,40 @@ export default function PostCard({ post, onPostUpdate, onPostDelete }: PostCardP
                   </div>
                   <div className="flex-1">
                     <div className="bg-gray-100 rounded-lg px-3 py-2">
-                      <p className="font-semibold text-sm">{comment.user?.name || comment.user?.email || 'Unknown User'}</p>
-                      <p className="text-sm text-gray-900">{comment.content}</p>
+                      <div className="flex justify-between items-start">
+                        <div className="flex-1">
+                          <p className="font-semibold text-sm">{comment.user?.name || comment.user?.email || 'Unknown User'}</p>
+                          <p className="text-sm text-gray-900">{comment.content}</p>
+                        </div>
+                        {/* Three dots menu for comment owner */}
+                        {currentUser && (currentUser.id === comment.user?._id || currentUser._id === comment.user?._id) && (
+                          <div className="relative">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                toggleCommentDropdown(comment._id)
+                              }}
+                              className="text-gray-400 hover:text-gray-600 ml-2 p-1 transition-colors"
+                              title="Comment options"
+                            >
+                              <span className="text-xs">⋯</span>
+                            </button>
+                            {showCommentDropdowns[comment._id] && (
+                              <div 
+                                className="absolute right-0 mt-1 w-36 bg-white rounded-md shadow-lg z-20 border"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <button
+                                  onClick={() => handleDeleteComment(comment._id)}
+                                  className="block w-full text-left px-3 py-2 text-sm text-red-600 hover:bg-gray-100 rounded-md"
+                                >
+                                  Delete Comment
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
                     </div>
                     <p className="text-xs text-gray-500 mt-1">
                       {formatTimeAgo(comment.createdAt)}
