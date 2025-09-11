@@ -3,7 +3,6 @@ import axios from 'axios';
 // Create axios instance for API calls to Express.js backend
 const api = axios.create({
   baseURL: 'http://localhost:8000',
-  withCredentials: true, // Important for session cookies
   headers: {
     'Content-Type': 'application/json',
   },
@@ -32,10 +31,12 @@ api.interceptors.response.use(
   },
   (error) => {
     if (error.response?.status === 401) {
-      // Redirect to login if unauthorized
+      // Redirect to login if unauthorized, but not if already on login page
       if (typeof window !== 'undefined') {
         localStorage.removeItem('authToken');
-        window.location.href = '/auth/login';
+        if (!window.location.pathname.includes('/auth/login')) {
+          window.location.href = '/auth/login';
+        }
       }
     }
     return Promise.reject(error);

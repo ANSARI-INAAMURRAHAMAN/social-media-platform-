@@ -51,9 +51,16 @@ export default function FeedPage() {
     if (mounted) {
       const authSuccess = searchParams.get('auth')
       const userParam = searchParams.get('user')
+      const tokenParam = searchParams.get('token')
       
       if (authSuccess === 'success') {
         setSuccessMessage('Successfully logged in with Google!')
+        
+        // Store JWT token if provided
+        if (tokenParam) {
+          localStorage.setItem('authToken', tokenParam)
+          console.log('JWT token stored from Google OAuth')
+        }
         
         // Store user data in localStorage if provided
         if (userParam) {

@@ -2,6 +2,7 @@ const User = require('../models/user');
 const Friendship = require('../models/friendship');
 const fs = require('fs');
 const path = require('path');
+const jwt = require('jsonwebtoken');
 
 // let's keep it same as before
 module.exports.profile = async function(req, res){
@@ -202,12 +203,22 @@ module.exports.create = function(req, res){
 }
 
 
-// sign in and create a session for the user
+// sign in and create a JWT token for the user
 module.exports.createSession = function(req, res){
+    const token = jwt.sign(
+        { 
+            id: req.user._id,
+            email: req.user.email 
+        },
+        process.env.JWT_SECRET,
+        { expiresIn: '24h' }
+    );
+
     return res.status(200).json({
         success: true,
         message: 'Logged in successfully',
         data: {
+            token: token,
             user: {
                 _id: req.user._id,
                 name: req.user.name,

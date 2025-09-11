@@ -1,32 +1,75 @@
 const express = require('express');
 const router = express.Router();
 const passport = require('passport');
+const jwt = require('jsonwebtoken');
 
 const usersController = require('../controllers/users_controller');
+const { authenticateJWT } = require('../config/middleware');
 
 // Route for getting current user's profile (for frontend)
-router.get('/profile', passport.checkAuthentication, usersController.profile);
-router.get('/profile/:id', passport.checkAuthentication, usersController.profile);
-router.post('/update/:id', passport.checkAuthentication, usersController.update);
+router.get('/profile', authenticateJWT, usersController.profile);
+router.get('/profile/:id', authenticateJWT, usersController.profile);
+router.post('/update/:id', authenticateJWT, usersController.update);
 
 // Add a new route for updating the current user's profile without ID parameter
 const profileController = require('../controllers/profile_controller');
-router.post('/update', passport.checkAuthentication, profileController.updateUser);
+router.post('/update', authenticateJWT, profileController.updateUser);
 
-// API endpoint to check if user is authenticated
-router.get('/auth/status', (req, res) => {
-    if (req.isAuthenticated()) {
+// API endpoint to check if user is authenticated with JWT
+router.get('/auth/status', authenticateJWT, (req, res) => {
+    return res.status(200).json({
+        success: true,
+        authenticated: true,
+        user: {
+            id: req.user._id,
+            name: req.user.name,
+            email: req.user.email,
+            username: req.user.username,
+            avatar: req.user.avatar
+        }
+    });
+});
+
+// API endpoint to verify token without requiring authentication
+router.get('/auth/verify', (req, res) => {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
         return res.status(200).json({
             success: true,
-            authenticated: true,
-            user: {
-                id: req.user._id,
-                name: req.user.name,
-                email: req.user.email,
-                avatar: req.user.avatar
-            }
+            authenticated: false,
+            user: null
         });
-    } else {
+    }
+
+    const token = authHeader.substring(7);
+    const jwt = require('jsonwebtoken');
+    
+    try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        const User = require('../models/user');
+        
+        User.findById(decoded.id, function(err, user) {
+            if (err || !user) {
+                return res.status(200).json({
+                    success: true,
+                    authenticated: false,
+                    user: null
+                });
+            }
+            
+            return res.status(200).json({
+                success: true,
+                authenticated: true,
+                user: {
+                    id: user._id,
+                    name: user.name,
+                    email: user.email,
+                    username: user.username,
+                    avatar: user.avatar
+                }
+            });
+        });
+    } catch (error) {
         return res.status(200).json({
             success: true,
             authenticated: false,
@@ -94,23 +137,26 @@ router.get('/auth/google/callback', (req, res, next) => {
             return res.redirect('http://localhost:3000/auth/login?error=oauth_failed');
         }
         
-        // Log the user in
-        req.logIn(user, (err) => {
-            if (err) {
-                console.log('Login error after Google OAuth:', err);
-                return res.redirect('http://localhost:3000/auth/login?error=login_failed');
-            }
-            
-            // Successful authentication - redirect to Next.js frontend with user data
-            console.log('Google OAuth successful for user:', user.email);
-            const userData = encodeURIComponent(JSON.stringify({
+        // Create JWT token for the user
+        const token = jwt.sign(
+            { 
                 id: user._id,
-                name: user.name,
-                email: user.email,
-                avatar: user.avatar
-            }));
-            return res.redirect(`http://localhost:3000/feed?auth=success&user=${userData}`);
-        });
+                email: user.email 
+            },
+            process.env.JWT_SECRET,
+            { expiresIn: '24h' }
+        );
+        
+        // Successful authentication - redirect to Next.js frontend with JWT token
+        console.log('Google OAuth successful for user:', user.email);
+        const userData = encodeURIComponent(JSON.stringify({
+            id: user._id,
+            name: user.name,
+            email: user.email,
+            username: user.username,
+            avatar: user.avatar
+        }));
+        return res.redirect(`http://localhost:3000/feed?auth=success&token=${token}&user=${userData}`);
     })(req, res, next);
 });
 

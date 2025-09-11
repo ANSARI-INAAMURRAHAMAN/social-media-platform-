@@ -38,7 +38,7 @@ export default function FollowButton({
 
   const handleToggleFollow = async () => {
     if (isLoading) return
-
+    
     setIsLoading(true)
     try {
       const response = await api.post(`/follow/toggle/${userId}`)
@@ -47,15 +47,22 @@ export default function FollowButton({
         const newIsFollowing = response.data.data.isFollowing
         setIsFollowing(newIsFollowing)
         
-        // Refresh follow status to get updated counts
-        await fetchFollowStatus()
-        
-        // Notify parent component
-        if (onFollowChange && followStatus) {
+        // Update followStatus object for count calculations
+        if (followStatus) {
           const newCount = newIsFollowing 
             ? followStatus.followersCount + 1 
             : followStatus.followersCount - 1
-          onFollowChange(newIsFollowing, newCount)
+          
+          setFollowStatus({
+            ...followStatus,
+            isFollowing: newIsFollowing,
+            followersCount: newCount
+          })
+          
+          // Notify parent component
+          if (onFollowChange) {
+            onFollowChange(newIsFollowing, newCount)
+          }
         }
       }
     } catch (error: any) {
@@ -80,7 +87,7 @@ export default function FollowButton({
         ${className}
       `}
     >
-      {isLoading ? '...' : isFollowing ? 'Following' : 'Follow'}
+      {isLoading ? '...' : isFollowing ? 'Unfollow' : 'Follow'}
     </button>
   )
 }

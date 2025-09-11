@@ -1,5 +1,6 @@
 const Friendship = require('../models/friendship');
 const User = require('../models/user');
+const mongoose = require('mongoose');
 
 // Follow a user
 module.exports.follow = async function(req, res) {
@@ -57,7 +58,6 @@ module.exports.follow = async function(req, res) {
         });
 
     } catch (error) {
-        console.log('Error following user:', error);
         return res.status(500).json({
             success: false,
             message: 'Error following user',
@@ -98,7 +98,6 @@ module.exports.unfollow = async function(req, res) {
         });
 
     } catch (error) {
-        console.log('Error unfollowing user:', error);
         return res.status(500).json({
             success: false,
             message: 'Error unfollowing user',
@@ -141,7 +140,6 @@ module.exports.getFollowers = async function(req, res) {
         });
 
     } catch (error) {
-        console.log('Error fetching followers:', error);
         return res.status(500).json({
             success: false,
             message: 'Error fetching followers',
@@ -184,7 +182,6 @@ module.exports.getFollowing = async function(req, res) {
         });
 
     } catch (error) {
-        console.log('Error fetching following:', error);
         return res.status(500).json({
             success: false,
             message: 'Error fetching following',
@@ -226,7 +223,6 @@ module.exports.getFollowStatus = async function(req, res) {
         });
 
     } catch (error) {
-        console.log('Error fetching follow status:', error);
         return res.status(500).json({
             success: false,
             message: 'Error fetching follow status',
@@ -247,6 +243,14 @@ module.exports.toggleFollow = async function(req, res) {
 
         const { userId } = req.params;
         const currentUserId = req.user._id;
+
+        // Validate userId parameter
+        if (!userId || !mongoose.Types.ObjectId.isValid(userId)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid user ID'
+            });
+        }
 
         // Check if trying to follow themselves
         if (currentUserId.toString() === userId) {
@@ -273,7 +277,7 @@ module.exports.toggleFollow = async function(req, res) {
 
         if (existingFriendship) {
             // Unfollow
-            await Friendship.findOneAndDelete({
+            const deleteResult = await Friendship.findOneAndDelete({
                 from_user: currentUserId,
                 to_user: userId
             });
@@ -288,7 +292,7 @@ module.exports.toggleFollow = async function(req, res) {
             });
         } else {
             // Follow
-            await Friendship.create({
+            const newFriendship = await Friendship.create({
                 from_user: currentUserId,
                 to_user: userId,
                 status: 'accepted'
@@ -305,11 +309,10 @@ module.exports.toggleFollow = async function(req, res) {
         }
 
     } catch (error) {
-        console.log('Error toggling follow:', error);
         return res.status(500).json({
             success: false,
             message: 'Error toggling follow',
-            error: error
+            error: error.message
         });
     }
 };

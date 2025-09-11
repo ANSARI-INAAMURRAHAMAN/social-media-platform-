@@ -38,13 +38,14 @@ export default function LoginPage() {
 
   const checkAuthStatus = async () => {
     try {
-      const response = await api.get('/users/auth/status')
+      // Use the verify endpoint that doesn't require auth but checks token validity
+      const response = await api.get('/users/auth/verify')
       if (response.data.authenticated) {
         router.push('/feed')
       }
     } catch (error) {
-      // User not authenticated, continue with login page
-      console.log('User not authenticated')
+      // Error checking auth status, user likely not authenticated
+      console.log('Error checking auth status:', error)
     }
   }
 
@@ -60,9 +61,9 @@ export default function LoginPage() {
       })
 
       if (response.data.success) {
-        // Store auth token if provided
-        if (response.data.token) {
-          localStorage.setItem('authToken', response.data.token)
+        // Store auth token (JWT-based authentication)
+        if (response.data.data.token) {
+          localStorage.setItem('authToken', response.data.data.token)
         }
         
         // Redirect to feed

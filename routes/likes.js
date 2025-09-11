@@ -1,9 +1,9 @@
 const express = require('express');
-const passport = require('passport');
+const { authenticateJWT } = require('../config/middleware');
 
 const router = express.Router();
 const likesController = require('../controllers/likes_controller');
 
-router.post('/toggle', passport.checkAuthentication, likesController.toggleLike);
+router.post('/toggle', authenticateJWT, likesController.toggleLike);
 
 module.exports = router;
