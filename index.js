@@ -25,12 +25,25 @@ const customMware = require('./config/middleware');
 // setup the chat server to be used with socket.io
 const chatServer = require('http').Server(app);
 const chatSockets = require('./config/chat_sockets').chatSockets(chatServer);
-chatServer.listen(5001);
-console.log('chat server is listening on port 5001');
+// For Render, use the same port as the main server
+const chatPort = process.env.CHAT_PORT || port;
+chatServer.listen(chatPort);
+console.log(`chat server is listening on port ${chatPort}`);
 
 // Add CORS support for Next.js frontend
 app.use((req, res, next) => {
-    res.header('Access-Control-Allow-Origin', 'http://localhost:3000');
+    const allowedOrigins = [
+        'http://localhost:3000',
+        'https://localhost:3000',
+        process.env.FRONTEND_URL,
+        process.env.RENDER_EXTERNAL_URL
+    ].filter(Boolean);
+    
+    const origin = req.headers.origin;
+    if (allowedOrigins.includes(origin) || !origin) {
+        res.header('Access-Control-Allow-Origin', origin || '*');
+    }
+    
     res.header('Access-Control-Allow-Credentials', 'true');
     res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
     res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
