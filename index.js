@@ -25,10 +25,8 @@ const customMware = require('./config/middleware');
 // setup the chat server to be used with socket.io
 const chatServer = require('http').Server(app);
 const chatSockets = require('./config/chat_sockets').chatSockets(chatServer);
-// For Render, use the same port as the main server
-const chatPort = process.env.CHAT_PORT || port;
-chatServer.listen(chatPort);
-console.log(`chat server is listening on port ${chatPort}`);
+// Don't listen separately - we'll use the main server listener
+console.log('Chat server initialized with Socket.io');
 
 // Add CORS support for Next.js frontend
 app.use((req, res, next) => {
@@ -102,11 +100,12 @@ app.use(customMware.setFlash);
 // use express router
 app.use('/', require('./routes'));
 
-
-app.listen(port, function(err){
+// Use chatServer (which includes socket.io) instead of app directly
+chatServer.listen(port, function(err){
     if (err){
         console.log(`Error in running the server: ${err}`);
     }
 
     console.log(`Server is running on port: ${port}`);
+    console.log(`Socket.io chat server is also running on port: ${port}`);
 });
