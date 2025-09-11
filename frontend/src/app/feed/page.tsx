@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import Link from 'next/link'
 import api from '@/lib/api'
 import PostCard from '@/components/PostCard'
@@ -34,7 +34,7 @@ interface SuggestedUser {
   followersCount?: number
 }
 
-export default function FeedPage() {
+function FeedContent() {
   const [posts, setPosts] = useState<Post[]>([])
   const [suggestedUsers, setSuggestedUsers] = useState<SuggestedUser[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -302,5 +302,13 @@ export default function FeedPage() {
         />
       )}
     </div>
+  )
+}
+
+export default function FeedPage() {
+  return (
+    <Suspense fallback={<div className="flex justify-center items-center min-h-screen">Loading...</div>}>
+      <FeedContent />
+    </Suspense>
   )
 }
