@@ -15,6 +15,7 @@ router.use('/activity', require('./activity'));
 router.use('/follow', require('./follow'));
 router.use('/discover', require('./discovery'));
 router.use('/chat', require('./chat'));
+router.use('/stories', require('./stories'));
 
 
 router.use('/api', require('./api'));

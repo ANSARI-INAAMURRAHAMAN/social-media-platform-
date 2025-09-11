@@ -6,6 +6,8 @@ import api from '@/lib/api'
 import PostCard from '@/components/PostCard'
 import BottomNavigation from '@/components/BottomNavigation'
 import FollowButton from '@/components/FollowButton'
+import StoriesFeed from '@/components/StoriesFeed'
+import StoryCreate from '@/components/StoryCreate'
 import { useSearchParams } from 'next/navigation'
 
 interface Post {
@@ -40,7 +42,24 @@ export default function FeedPage() {
   const [refreshing, setRefreshing] = useState(false)
   const [successMessage, setSuccessMessage] = useState('')
   const [mounted, setMounted] = useState(false)
+  const [showStoryCreate, setShowStoryCreate] = useState(false)
   const searchParams = useSearchParams()
+
+  // Get current user ID from token
+  const getCurrentUserId = (): string | null => {
+    if (typeof window === 'undefined') return null
+    
+    const token = localStorage.getItem('authToken')
+    if (!token) return null
+    
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]))
+      return payload._id || null
+    } catch (error) {
+      console.error('Error decoding token:', error)
+      return null
+    }
+  }
 
   useEffect(() => {
     setMounted(true)
@@ -81,6 +100,11 @@ export default function FeedPage() {
     fetchPosts()
     fetchSuggestedUsers()
   }, [mounted, searchParams])
+
+  const handleStoryCreated = () => {
+    // Refresh stories feed - the StoriesFeed component will handle this
+    // Could also trigger a refresh of the stories data here
+  }
 
   const fetchSuggestedUsers = async () => {
     try {
@@ -145,6 +169,13 @@ export default function FeedPage() {
           </h1>
           <div className="flex items-center space-x-4">
             <button 
+              onClick={() => setShowStoryCreate(true)}
+              className="text-gray-600 hover:text-blue-500 transition-colors"
+              title="Add Story"
+            >
+              📷
+            </button>
+            <button 
               onClick={handleRefresh}
               disabled={refreshing}
               className="text-gray-600 hover:text-instagram-blue"
@@ -162,7 +193,11 @@ export default function FeedPage() {
       </header>
 
       {/* Feed */}
-      <div className="max-w-md mx-auto py-4">
+      <div className="max-w-md mx-auto">
+        {/* Stories Section */}
+        <StoriesFeed currentUserId={getCurrentUserId() || undefined} />
+        
+        <div className="py-4">
         {successMessage && (
           <div className="mx-4 mb-4 bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded">
             {successMessage}
@@ -250,10 +285,22 @@ export default function FeedPage() {
             ))}
           </div>
         )}
+        </div>
       </div>
 
       {/* Bottom Navigation */}
       <BottomNavigation />
+      
+      {/* Story Create Modal */}
+      {showStoryCreate && (
+        <StoryCreate
+          onStoryCreated={() => {
+            handleStoryCreated()
+            setShowStoryCreate(false)
+          }}
+          onClose={() => setShowStoryCreate(false)}
+        />
+      )}
     </div>
   )
 }

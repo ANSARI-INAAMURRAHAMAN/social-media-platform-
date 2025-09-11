@@ -9,9 +9,9 @@ export default function BottomNavigation() {
   const navItems = [
     { href: '/feed', icon: '🏠', label: 'Home' },
     { href: '/discover', icon: '🔍', label: 'Discover' },
+    { href: '/stories', icon: '📱', label: 'Stories' },
     { href: '/create', icon: '➕', label: 'Create' },
     { href: '/chat', icon: '💬', label: 'Chat' },
-    { href: '/activity', icon: '❤️', label: 'Activity' },
     { href: '/profile', icon: '👤', label: 'Profile' },
   ]
 
