@@ -114,6 +114,18 @@ export default function UserProfilePage() {
     router.back()
   }
 
+  const startChat = async () => {
+    try {
+      const response = await api.post(`/chat/create/${userId}`)
+      if (response.data.success) {
+        router.push('/chat')
+      }
+    } catch (error: any) {
+      console.error('Error creating chat:', error)
+      alert(error.response?.data?.message || 'Failed to start chat')
+    }
+  }
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-instagram-gray flex items-center justify-center pb-16">
@@ -218,8 +230,11 @@ export default function UserProfilePage() {
                   className="w-full"
                 />
               </div>
-              <button className="flex-1 py-2 px-4 bg-gray-200 text-gray-800 rounded-lg font-medium hover:bg-gray-300">
-                Message
+              <button 
+                onClick={startChat}
+                className="flex-1 py-2 px-4 bg-gray-200 text-gray-800 rounded-lg font-medium hover:bg-gray-300"
+              >
+                💬 Message
               </button>
             </div>
           )}

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import api from '@/lib/api'
 import FollowButton from './FollowButton'
 
@@ -23,6 +24,7 @@ export default function UserList({ userId, type }: UserListProps) {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState('')
   const [currentUser, setCurrentUser] = useState<any>(null)
+  const router = useRouter()
 
   useEffect(() => {
     fetchUsers()
@@ -56,6 +58,18 @@ export default function UserList({ userId, type }: UserListProps) {
       console.error(`Error fetching ${type}:`, error)
     } finally {
       setIsLoading(false)
+    }
+  }
+
+  const startChat = async (targetUserId: string) => {
+    try {
+      const response = await api.post(`/chat/create/${targetUserId}`)
+      if (response.data.success) {
+        router.push('/chat')
+      }
+    } catch (error: any) {
+      console.error('Error creating chat:', error)
+      alert(error.response?.data?.message || 'Failed to start chat')
     }
   }
 
@@ -119,13 +133,24 @@ export default function UserList({ userId, type }: UserListProps) {
             </div>
           </div>
 
-          {/* Follow Button */}
-          {currentUser && currentUser._id !== user._id && (
-            <FollowButton 
-              userId={user._id}
-              className="text-xs px-3 py-1"
-            />
-          )}
+          {/* Actions */}
+          <div className="flex space-x-2">
+            {currentUser && currentUser._id !== user._id && (
+              <>
+                <FollowButton 
+                  userId={user._id}
+                  className="text-xs px-3 py-1"
+                />
+                <button
+                  onClick={() => startChat(user._id)}
+                  className="px-3 py-1 text-xs bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-colors"
+                  title="Start Chat"
+                >
+                  💬
+                </button>
+              </>
+            )}
+          </div>
         </div>
       ))}
     </div>

@@ -207,10 +207,10 @@ module.exports.create = function(req, res){
 module.exports.createSession = function(req, res){
     const token = jwt.sign(
         { 
-            id: req.user._id,
+            _id: req.user._id,
             email: req.user.email 
         },
-        process.env.JWT_SECRET,
+        process.env.JWT_SECRET || 'your-secret-key',
         { expiresIn: '24h' }
     );
 

@@ -10,6 +10,7 @@ export default function BottomNavigation() {
     { href: '/feed', icon: '🏠', label: 'Home' },
     { href: '/discover', icon: '🔍', label: 'Discover' },
     { href: '/create', icon: '➕', label: 'Create' },
+    { href: '/chat', icon: '💬', label: 'Chat' },
     { href: '/activity', icon: '❤️', label: 'Activity' },
     { href: '/profile', icon: '👤', label: 'Profile' },
   ]
