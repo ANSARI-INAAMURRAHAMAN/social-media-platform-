@@ -13,6 +13,10 @@ export default function CreatePostPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
+  const [isGeneratingContent, setIsGeneratingContent] = useState(false)
+  const [showAIHelper, setShowAIHelper] = useState(false)
+  const [aiInput, setAiInput] = useState('')
+  const [aiSuggestions, setAiSuggestions] = useState<string[]>([])
   const router = useRouter()
 
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -48,6 +52,95 @@ export default function CreatePostPage() {
     // Reset file input
     const fileInput = document.getElementById('image-input') as HTMLInputElement
     if (fileInput) fileInput.value = ''
+  }
+
+  const generateAIContent = async () => {
+    if (!aiInput.trim()) {
+      setError('Please enter some ideas for AI to generate content')
+      return
+    }
+
+    setIsGeneratingContent(true)
+    setError('')
+
+    try {
+      const response = await api.post('/ai/post-content', {
+        userInput: aiInput.trim(),
+        mediaType: selectedImage ? 'image' : 'text'
+      })
+
+      if (response.data.success) {
+        const { caption, hashtags } = response.data.data
+        const fullContent = `${caption}\n\n${hashtags}`
+        setContent(fullContent)
+        setShowAIHelper(false)
+        setAiInput('')
+      } else {
+        setError('Failed to generate content')
+      }
+    } catch (error: any) {
+      console.error('AI Content generation error:', error)
+      setError('Failed to generate content. Please try again.')
+    } finally {
+      setIsGeneratingContent(false)
+    }
+  }
+
+  const generateHashtags = async () => {
+    if (!content.trim()) {
+      setError('Please enter some content first')
+      return
+    }
+
+    setIsGeneratingContent(true)
+    try {
+      const response = await api.post('/ai/hashtags', {
+        content: content.trim(),
+        category: 'general'
+      })
+
+      if (response.data.success) {
+        const hashtags = response.data.data.hashtags
+        setContent(prev => prev + '\n\n' + hashtags)
+      } else {
+        setError('Failed to generate hashtags')
+      }
+    } catch (error: any) {
+      console.error('Hashtag generation error:', error)
+      setError('Failed to generate hashtags')
+    } finally {
+      setIsGeneratingContent(false)
+    }
+  }
+
+  const generateContentSuggestions = async () => {
+    if (!aiInput.trim()) {
+      setError('Please enter some input for suggestions')
+      return
+    }
+
+    setIsGeneratingContent(true)
+    setError('')
+
+    try {
+      const response = await api.post('/ai/suggestions', {
+        type: 'suggestions',
+        input: aiInput.trim(),
+        mediaType: selectedImage ? 'image' : 'text'
+      })
+
+      if (response.data.success) {
+        const suggestions = response.data.data.suggestions || []
+        setAiSuggestions(suggestions)
+      } else {
+        setError('Failed to generate suggestions')
+      }
+    } catch (error: any) {
+      console.error('Suggestions generation error:', error)
+      setError('Failed to generate suggestions. Please try again.')
+    } finally {
+      setIsGeneratingContent(false)
+    }
   }
 
   const handleCreatePost = async (e: React.FormEvent) => {
@@ -132,20 +225,115 @@ export default function CreatePostPage() {
 
           <form onSubmit={handleCreatePost} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                What's on your mind?
-              </label>
-              <textarea
-                value={content}
-                onChange={(e) => setContent(e.target.value)}
-                placeholder="Write something..."
-                rows={4}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-instagram-blue focus:border-transparent resize-none"
-                maxLength={500}
-              />
-              <div className="text-right text-sm text-gray-500 mt-1">
-                {content.length}/500
+              <div className="flex items-center justify-between mb-2">
+                <label className="block text-sm font-medium text-gray-700">
+                  What's on your mind?
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setShowAIHelper(!showAIHelper)}
+                  className="inline-flex items-center px-3 py-1 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs rounded-full hover:from-purple-600 hover:to-pink-600 transition-all duration-200"
+                >
+                  <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                  </svg>
+                  AI Helper
+                </button>
               </div>
+
+              {/* AI Helper Panel */}
+              {showAIHelper && (
+                <div className="bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200 rounded-lg p-4 mb-4">
+                  <h4 className="text-sm font-medium text-gray-800 mb-2">🤖 AI Content Assistant</h4>
+                  <div className="space-y-3">
+                    <div>
+                      <input
+                        type="text"
+                        value={aiInput}
+                        onChange={(e) => setAiInput(e.target.value)}
+                        placeholder="Describe what you want to post about..."
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        type="button"
+                        onClick={generateAIContent}
+                        disabled={isGeneratingContent || !aiInput.trim()}
+                        className="bg-purple-500 text-white px-3 py-2 rounded-md text-sm hover:bg-purple-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                      >
+                        {isGeneratingContent ? (
+                          <>
+                            <svg className="animate-spin -ml-1 mr-2 h-3 w-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            Generating...
+                          </>
+                        ) : (
+                          'Generate Content'
+                        )}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={generateContentSuggestions}
+                        disabled={isGeneratingContent || !aiInput.trim()}
+                        className="bg-indigo-500 text-white px-3 py-2 rounded-md text-sm hover:bg-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        Get Ideas
+                      </button>
+                      <button
+                        type="button"
+                        onClick={generateHashtags}
+                        disabled={isGeneratingContent || !content.trim()}
+                        className="bg-pink-500 text-white px-3 py-2 rounded-md text-sm hover:bg-pink-600 disabled:opacity-50 disabled:cursor-not-allowed col-span-2"
+                      >
+                        Add #Tags
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <div className="relative">
+                <textarea
+                  value={content}
+                  onChange={(e) => setContent(e.target.value)}
+                  placeholder="Write something amazing..."
+                  rows={6}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-instagram-blue focus:border-transparent resize-none"
+                  maxLength={2000}
+                />
+              </div>
+              <div className="flex justify-between text-xs text-gray-500 mt-1">
+                <span>Tip: Use AI Helper to get creative ideas!</span>
+                <span>{content.length}/2000</span>
+              </div>
+
+              {/* AI Suggestions */}
+              {aiSuggestions.length > 0 && (
+                <div className="mt-4 bg-blue-50 border border-blue-200 rounded-lg p-3">
+                  <h5 className="text-sm font-medium text-blue-800 mb-2">✨ AI Suggestions</h5>
+                  <div className="space-y-2">
+                    {aiSuggestions.map((suggestion, index) => (
+                      <div
+                        key={index}
+                        className="bg-white border border-blue-200 rounded-md p-2 cursor-pointer hover:bg-blue-50 transition-colors"
+                        onClick={() => setContent(suggestion)}
+                      >
+                        <p className="text-sm text-gray-700">{suggestion}</p>
+                      </div>
+                    ))}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setAiSuggestions([])}
+                    className="mt-2 text-xs text-blue-600 hover:text-blue-800"
+                  >
+                    Clear suggestions
+                  </button>
+                </div>
+              )}
             </div>
 
             {/* Image Upload Section */}
@@ -190,13 +378,30 @@ export default function CreatePostPage() {
               )}
             </div>
 
-            <button
-              type="submit"
-              disabled={isLoading || (!content.trim() && !selectedImage)}
-              className="w-full btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isLoading ? 'Posting...' : 'Share Post'}
-            </button>
+            <div className="flex space-x-3">
+              <button
+                type="button"
+                onClick={() => {
+                  if (!showAIHelper) {
+                    setShowAIHelper(true)
+                    setAiInput('Generate creative content for my post')
+                  }
+                }}
+                className="flex-1 bg-gradient-to-r from-purple-500 to-pink-500 text-white py-3 rounded-lg hover:from-purple-600 hover:to-pink-600 transition-all duration-200 flex items-center justify-center"
+              >
+                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                </svg>
+                AI Generate
+              </button>
+              <button
+                type="submit"
+                disabled={isLoading || (!content.trim() && !selectedImage)}
+                className="flex-1 btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isLoading ? 'Posting...' : 'Share Post'}
+              </button>
+            </div>
           </form>
         </div>
 
