@@ -1,8 +1,19 @@
 import axios from 'axios';
 
+// Get the base URL for the API
+export const getApiBaseUrl = () => {
+  return process.env.NEXT_PUBLIC_API_URL || 'https://instagram-clone-backend-tu60.onrender.com';
+};
+
+// Helper function to get full image URL
+export const getImageUrl = (imagePath: string | undefined) => {
+  if (!imagePath) return '';
+  return `${getApiBaseUrl()}${imagePath}`;
+};
+
 // Create axios instance for API calls to Express.js backend
 const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000',
+  baseURL: getApiBaseUrl(),
   headers: {
     'Content-Type': 'application/json',
   },

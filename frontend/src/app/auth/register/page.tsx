@@ -138,7 +138,7 @@ export default function RegisterPage() {
         </div>
 
         <button
-          onClick={() => window.location.href = 'http://localhost:8000/users/auth/google'}
+          onClick={() => window.location.href = (process.env.NEXT_PUBLIC_API_URL || 'https://instagram-clone-backend-tu60.onrender.com') + '/users/auth/google'}
           className="w-full btn-secondary mb-4"
         >
           Sign up with Google

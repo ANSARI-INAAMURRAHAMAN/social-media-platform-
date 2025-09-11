@@ -95,7 +95,7 @@ export default function ChatPage() {
         return
       }
 
-      const newSocket = io(process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000', {
+      const newSocket = io(process.env.NEXT_PUBLIC_API_URL || 'https://instagram-clone-backend-tu60.onrender.com', {
         auth: { token }
       })
       

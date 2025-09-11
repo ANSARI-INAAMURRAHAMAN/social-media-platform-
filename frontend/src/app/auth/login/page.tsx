@@ -80,7 +80,7 @@ function LoginForm() {
 
   const handleGoogleLogin = () => {
     // Redirect to backend Google OAuth
-    window.location.href = 'http://localhost:8000/users/auth/google'
+    window.location.href = (process.env.NEXT_PUBLIC_API_URL || 'https://instagram-clone-backend-tu60.onrender.com') + '/users/auth/google'
   }
 
   return (

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import api from '@/lib/api'
+import api, { getImageUrl } from '@/lib/api'
 
 interface User {
   _id: string
@@ -304,7 +304,7 @@ export default function PostCard({ post, onPostUpdate, onPostDelete }: PostCardP
         {post.image && (
           <div className="mt-3">
             <img
-              src={`http://localhost:8000${post.image}`}
+              src={getImageUrl(post.image)}
               alt="Post content"
               className="w-full rounded-lg object-cover max-h-96"
               onError={(e) => {
