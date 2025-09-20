@@ -1,7 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: 'export',
-  trailingSlash: true,
+  // Remove output: 'export' to allow dynamic routes
   images: {
     unoptimized: true,
     domains: ['localhost'],
@@ -19,7 +18,6 @@ const nextConfig = {
       },
     ],
   },
-  // Remove rewrites for static export - use environment variables instead
 };
 
 export default nextConfig;
