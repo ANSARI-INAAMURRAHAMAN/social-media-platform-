@@ -1,6 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  outputFileTracingRoot: '.',
+  output: 'export',
+  trailingSlash: true,
   images: {
     unoptimized: true,
     domains: ['localhost'],
@@ -18,14 +19,7 @@ const nextConfig = {
       },
     ],
   },
-  async rewrites() {
-    return [
-      {
-        source: '/api/:path*',
-        destination: 'http://localhost:8000/:path*',
-      },
-    ];
-  },
+  // Remove rewrites for static export - use environment variables instead
 };
 
 export default nextConfig;
