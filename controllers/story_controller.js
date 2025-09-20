@@ -2,6 +2,7 @@ const Story = require('../models/story');
 const User = require('../models/user');
 const fs = require('fs');
 const path = require('path');
+const { uploadImage, uploadVideo, deleteFile } = require('../config/cloudinary');
 
 // Create a new story
 module.exports.create = async function(req, res) {
@@ -40,16 +41,40 @@ module.exports.create = async function(req, res) {
                     });
                 }
 
-                // Determine media type and path
+                // Determine media type and upload to Cloudinary
                 const mediaType = req.file.mimetype.startsWith('video/') ? 'video' : 'image';
-                const mediaPath = mediaType === 'video' 
-                    ? Story.videoPath + '/' + req.file.filename
-                    : Story.imagePath + '/' + req.file.filename;
+                
+                let cloudinaryResult;
+                try {
+                    if (mediaType === 'video') {
+                        cloudinaryResult = await uploadVideo(req.file, 'instagram-clone/stories');
+                    } else {
+                        cloudinaryResult = await uploadImage(req.file, 'instagram-clone/stories');
+                    }
+                    
+                    // Clean up local file after upload
+                    fs.unlinkSync(req.file.path);
+                } catch (cloudinaryError) {
+                    console.error('Cloudinary upload error:', cloudinaryError);
+                    // Clean up local file
+                    if (req.file && req.file.path) {
+                        try {
+                            fs.unlinkSync(req.file.path);
+                        } catch (unlinkError) {
+                            console.error('Error deleting local file:', unlinkError);
+                        }
+                    }
+                    return res.status(500).json({
+                        success: false,
+                        message: 'Error uploading media to cloud storage',
+                        error: cloudinaryError.message
+                    });
+                }
 
                 let storyData = {
                     user: req.user._id,
                     mediaType: mediaType,
-                    mediaUrl: mediaPath,
+                    mediaUrl: cloudinaryResult.secure_url,
                     text: req.body.text || ''
                 };
 
@@ -264,23 +289,20 @@ module.exports.delete = async function(req, res) {
             });
         }
 
-        // Delete the media file
+        // Delete the media file from Cloudinary
         try {
-            const mediaPath = path.join(__dirname, '..', story.mediaUrl);
-            if (fs.existsSync(mediaPath)) {
-                fs.unlinkSync(mediaPath);
-            }
+            // Extract public_id from Cloudinary URL
+            const urlParts = story.mediaUrl.split('/');
+            const filename = urlParts[urlParts.length - 1];
+            const publicId = `instagram-clone/stories/${filename.split('.')[0]}`;
+            const resourceType = story.mediaType === 'video' ? 'video' : 'image';
             
-            // Delete thumbnail if exists
-            if (story.thumbnail) {
-                const thumbnailPath = path.join(__dirname, '..', story.thumbnail);
-                if (fs.existsSync(thumbnailPath)) {
-                    fs.unlinkSync(thumbnailPath);
-                }
-            }
-        } catch (fileError) {
-            console.error('Error deleting story files:', fileError);
-            // Continue with story deletion even if file deletion fails
+            await deleteFile(publicId, resourceType);
+            console.log('Story media deleted from Cloudinary:', publicId);
+            
+        } catch (cloudinaryError) {
+            console.error('Error deleting story from Cloudinary:', cloudinaryError);
+            // Continue with story deletion even if Cloudinary deletion fails
         }
 
         await Story.findByIdAndDelete(storyId);

@@ -8,6 +8,13 @@ export const getApiBaseUrl = () => {
 // Helper function to get full image URL
 export const getImageUrl = (imagePath: string | undefined) => {
   if (!imagePath) return '';
+  
+  // If the image path is already a full URL (Cloudinary), return as is
+  if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
+    return imagePath;
+  }
+  
+  // For backward compatibility with local uploads
   return `${getApiBaseUrl()}${imagePath}`;
 };
 

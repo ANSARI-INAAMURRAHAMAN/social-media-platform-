@@ -3,6 +3,7 @@ const Friendship = require('../models/friendship');
 const fs = require('fs');
 const path = require('path');
 const jwt = require('jsonwebtoken');
+const { uploadImage, deleteFile } = require('../config/cloudinary');
 
 // let's keep it same as before
 module.exports.profile = async function(req, res){
@@ -59,36 +60,73 @@ module.exports.update = async function(req, res){
         try{
 
             let user = await User.findById(req.params.id);
-            User.uploadedAvatar(req, res, function(err){
+            User.uploadedAvatar(req, res, async function(err){
                 if (err) {console.log('*****Multer Error: ', err)}
                 
-                user.name = req.body.name;
-                user.email = req.body.email;
+                try {
+                    user.name = req.body.name;
+                    user.email = req.body.email;
 
-                if (req.file){
+                    if (req.file){
+                        // Delete old avatar from Cloudinary if exists
+                        if (user.avatar) {
+                            try {
+                                const urlParts = user.avatar.split('/');
+                                const filename = urlParts[urlParts.length - 1];
+                                const publicId = `instagram-clone/avatars/${filename.split('.')[0]}`;
+                                await deleteFile(publicId, 'image');
+                            } catch (deleteError) {
+                                console.log('Error deleting old avatar from Cloudinary:', deleteError);
+                            }
+                        }
 
-                    if (user.avatar){
-                        fs.unlinkSync(path.join(__dirname, '..', user.avatar));
-                    }
-
-
-                    // this is saving the path of the uploaded file into the avatar field in the user
-                    user.avatar = User.avatarPath + '/' + req.file.filename;
-                }
-                user.save();
-                
-                return res.status(200).json({
-                    success: true,
-                    message: 'Profile updated successfully',
-                    data: {
-                        user: {
-                            id: user._id,
-                            name: user.name,
-                            email: user.email,
-                            avatar: user.avatar
+                        // Upload new avatar to Cloudinary
+                        try {
+                            const cloudinaryResult = await uploadImage(req.file, 'instagram-clone/avatars');
+                            user.avatar = cloudinaryResult.secure_url;
+                            
+                            // Clean up local file
+                            fs.unlinkSync(req.file.path);
+                        } catch (cloudinaryError) {
+                            console.error('Cloudinary avatar upload error:', cloudinaryError);
+                            // Clean up local file
+                            if (req.file && req.file.path) {
+                                try {
+                                    fs.unlinkSync(req.file.path);
+                                } catch (unlinkError) {
+                                    console.error('Error deleting local file:', unlinkError);
+                                }
+                            }
+                            return res.status(500).json({
+                                success: false,
+                                message: 'Error uploading avatar to cloud storage',
+                                error: cloudinaryError.message
+                            });
                         }
                     }
-                });
+                    
+                    await user.save();
+                    
+                    return res.status(200).json({
+                        success: true,
+                        message: 'Profile updated successfully',
+                        data: {
+                            user: {
+                                id: user._id,
+                                name: user.name,
+                                email: user.email,
+                                avatar: user.avatar
+                            }
+                        }
+                    });
+                } catch (saveError) {
+                    console.log('Error saving user:', saveError);
+                    return res.status(500).json({
+                        success: false,
+                        message: 'Error saving user profile',
+                        error: saveError.message
+                    });
+                }
             });
 
         }catch(err){

@@ -3,6 +3,7 @@ const Comment = require('../models/comment');
 const Like = require('../models/like');
 const fs = require('fs');
 const path = require('path');
+const { uploadImage, deleteFile, getPublicIdFromUrl } = require('../config/cloudinary');
 
 module.exports.create = async function(req, res){
     try{
@@ -30,9 +31,30 @@ module.exports.create = async function(req, res){
                     user: req.user._id
                 };
 
-                // Add image path if file was uploaded
+                // Upload image to Cloudinary if file was uploaded
                 if (req.file) {
-                    postData.image = Post.imagePath + '/' + req.file.filename;
+                    try {
+                        const cloudinaryResult = await uploadImage(req.file, 'instagram-clone/posts');
+                        postData.image = cloudinaryResult.secure_url;
+                        
+                        // Clean up local file after upload
+                        fs.unlinkSync(req.file.path);
+                    } catch (cloudinaryError) {
+                        console.error('Cloudinary upload error:', cloudinaryError);
+                        // Clean up local file
+                        if (req.file && req.file.path) {
+                            try {
+                                fs.unlinkSync(req.file.path);
+                            } catch (unlinkError) {
+                                console.error('Error deleting local file:', unlinkError);
+                            }
+                        }
+                        return res.status(500).json({
+                            success: false,
+                            message: 'Error uploading image to cloud storage',
+                            error: cloudinaryError.message
+                        });
+                    }
                 }
 
                 let post = await Post.create(postData);
@@ -93,16 +115,19 @@ module.exports.destroy = async function(req, res){
             });
         }
 
-        // Delete associated image file if exists
+        // Delete associated image from Cloudinary if exists
         if (post.image) {
             try {
-                const imagePath = path.join(__dirname, '..', post.image);
-                if (fs.existsSync(imagePath)) {
-                    fs.unlinkSync(imagePath);
-                    console.log('Post image deleted:', post.image);
-                }
-            } catch (fileErr) {
-                console.log('Error deleting post image:', fileErr);
+                // Extract public_id from Cloudinary URL
+                const urlParts = post.image.split('/');
+                const filename = urlParts[urlParts.length - 1];
+                const publicId = `instagram-clone/posts/${filename.split('.')[0]}`;
+                
+                await deleteFile(publicId, 'image');
+                console.log('Post image deleted from Cloudinary:', publicId);
+            } catch (cloudinaryErr) {
+                console.log('Error deleting post image from Cloudinary:', cloudinaryErr);
+                // Continue with post deletion even if Cloudinary deletion fails
             }
         }
 
