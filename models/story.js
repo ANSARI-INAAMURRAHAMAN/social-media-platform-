@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 const multer = require('multer');
 const path = require('path');
+const os = require('os');
 
 // Storage paths for stories
 const STORY_IMAGE_PATH = path.join('/uploads/stories/images');
@@ -59,16 +60,11 @@ const storySchema = new mongoose.Schema({
 // Index for automatic expiry
 storySchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 
-// Multer configuration for story media (images and videos)
+// Multer configuration for story media (images and videos) - using temp storage for Cloudinary
 let storage = multer.diskStorage({
     destination: function (req, file, cb) {
-        let uploadPath;
-        if (file.mimetype.startsWith('video/')) {
-            uploadPath = path.join(__dirname, '..', STORY_VIDEO_PATH);
-        } else {
-            uploadPath = path.join(__dirname, '..', STORY_IMAGE_PATH);
-        }
-        cb(null, uploadPath);
+        // Use system temp directory for all uploads
+        cb(null, os.tmpdir());
     },
     filename: function (req, file, cb) {
         const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);

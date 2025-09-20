@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 const multer = require('multer');
 const path = require('path');
+const os = require('os');
 const POST_IMAGE_PATH = path.join('/uploads/posts/images');
 
 const postSchema = new mongoose.Schema({
@@ -33,10 +34,12 @@ const postSchema = new mongoose.Schema({
     timestamps: true
 });
 
-// Multer configuration for post images
+// Multer configuration for post images - using temp storage for Cloudinary
+const os = require('os');
 let storage = multer.diskStorage({
     destination: function (req, file, cb) {
-        cb(null, path.join(__dirname, '..', POST_IMAGE_PATH));
+        // Use system temp directory for temporary files
+        cb(null, os.tmpdir());
     },
     filename: function (req, file, cb) {
         cb(null, file.fieldname + '-' + Date.now() + path.extname(file.originalname));

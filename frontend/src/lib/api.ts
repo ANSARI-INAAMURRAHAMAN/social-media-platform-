@@ -14,8 +14,14 @@ export const getImageUrl = (imagePath: string | undefined) => {
     return imagePath;
   }
   
-  // For backward compatibility with local uploads
-  return `${getApiBaseUrl()}${imagePath}`;
+  // For legacy local uploads, normalize the path and prepend API base URL
+  // Handle both forward and backward slashes
+  const normalizedPath = imagePath.replace(/\\/g, '/');
+  if (!normalizedPath.startsWith('/')) {
+    return `${getApiBaseUrl()}/${normalizedPath}`;
+  }
+  
+  return `${getApiBaseUrl()}${normalizedPath}`;
 };
 
 // Create axios instance for API calls to Express.js backend
