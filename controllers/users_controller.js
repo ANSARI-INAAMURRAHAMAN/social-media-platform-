@@ -4,7 +4,6 @@ const fs = require('fs');
 const path = require('path');
 const jwt = require('jsonwebtoken');
 const { uploadImage, deleteFile } = require('../config/cloudinary');
-const { uploadImage, deleteFile } = require('../config/cloudinary');
 
 // let's keep it same as before
 module.exports.profile = async function(req, res){
