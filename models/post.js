@@ -35,7 +35,6 @@ const postSchema = new mongoose.Schema({
 });
 
 // Multer configuration for post images - using temp storage for Cloudinary
-const os = require('os');
 let storage = multer.diskStorage({
     destination: function (req, file, cb) {
         // Use system temp directory for temporary files
