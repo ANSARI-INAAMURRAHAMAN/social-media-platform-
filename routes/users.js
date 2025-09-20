@@ -129,12 +129,12 @@ router.get('/auth/google/callback', (req, res, next) => {
     passport.authenticate('google', (err, user, info) => {
         if (err) {
             console.log('Google OAuth error:', err);
-            return res.redirect('http://localhost:3000/auth/login?error=oauth_error');
+            return res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:3000'}/auth/login?error=oauth_error`);
         }
         
         if (!user) {
             console.log('Google OAuth failed - no user');
-            return res.redirect('http://localhost:3000/auth/login?error=oauth_failed');
+            return res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:3000'}/auth/login?error=oauth_failed`);
         }
         
         // Create JWT token for the user
@@ -156,7 +156,7 @@ router.get('/auth/google/callback', (req, res, next) => {
             username: user.username,
             avatar: user.avatar
         }));
-        return res.redirect(`http://localhost:3000/feed?auth=success&token=${token}&user=${userData}`);
+        return res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:3000'}/feed?auth=success&token=${token}&user=${userData}`);
     })(req, res, next);
 });
 

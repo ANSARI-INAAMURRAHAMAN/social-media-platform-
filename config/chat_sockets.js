@@ -6,7 +6,7 @@ const jwt = require('jsonwebtoken');
 module.exports.chatSockets = function(socketServer){
     let io = require('socket.io')(socketServer, {
         cors: {
-            origin: "http://localhost:3000",
+            origin: process.env.FRONTEND_URL || "http://localhost:3000",
             methods: ["GET", "POST"],
             credentials: true
         }
