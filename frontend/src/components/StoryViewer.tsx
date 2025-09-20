@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import api from '@/lib/api'
+import api, { getImageUrl } from '@/lib/api'
 
 interface User {
   _id: string
@@ -207,7 +207,7 @@ export default function StoryViewer({ stories, initialIndex = 0, onClose, onStor
             <div className="w-full h-full rounded-full bg-white p-0.5">
               {currentStory.user.avatar ? (
                 <img 
-                  src={`http://localhost:8000${currentStory.user.avatar}`}
+                  src={getImageUrl(currentStory.user.avatar)}
                   alt={currentStory.user.name}
                   className="w-full h-full rounded-full object-cover"
                 />
@@ -256,7 +256,7 @@ export default function StoryViewer({ stories, initialIndex = 0, onClose, onStor
         >
           {currentStory.mediaType === 'image' ? (
             <img
-              src={`http://localhost:8000${currentStory.mediaUrl}`}
+              src={getImageUrl(currentStory.mediaUrl)}
               alt="Story"
               className="max-w-full max-h-full object-contain"
               onLoad={handleMediaLoad}
@@ -265,7 +265,7 @@ export default function StoryViewer({ stories, initialIndex = 0, onClose, onStor
           ) : (
             <video
               ref={videoRef}
-              src={`http://localhost:8000${currentStory.mediaUrl}`}
+              src={getImageUrl(currentStory.mediaUrl)}
               className="max-w-full max-h-full object-contain"
               onLoadedData={handleVideoLoad}
               onEnded={nextStory}

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import api from '@/lib/api'
+import api, { getImageUrl } from '@/lib/api'
 import StoryViewer from './StoryViewer'
 import StoryCreate from './StoryCreate'
 
@@ -136,7 +136,7 @@ export default function StoriesFeed({ currentUserId }: StoriesFeedProps) {
                     <div className="w-full h-full rounded-full bg-white p-0.5">
                       {currentUserStories.user.avatar ? (
                         <img 
-                          src={`http://localhost:8000${currentUserStories.user.avatar}`}
+                          src={getImageUrl(currentUserStories.user.avatar)}
                           alt="Your story"
                           className="w-full h-full rounded-full object-cover"
                         />
@@ -204,7 +204,7 @@ export default function StoriesFeed({ currentUserId }: StoriesFeedProps) {
                     <div className="w-full h-full rounded-full bg-white p-0.5">
                       {group.user.avatar ? (
                         <img 
-                          src={`http://localhost:8000${group.user.avatar}`}
+                          src={getImageUrl(group.user.avatar)}
                           alt={group.user.name || group.user.email}
                           className="w-full h-full rounded-full object-cover"
                         />

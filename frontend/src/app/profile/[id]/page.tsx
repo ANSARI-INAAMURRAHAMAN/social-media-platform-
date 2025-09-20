@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
-import api from '@/lib/api'
+import api, { getImageUrl } from '@/lib/api'
 import PostCard from '@/components/PostCard'
 import BottomNavigation from '@/components/BottomNavigation'
 import UserList from '@/components/UserList'
@@ -189,7 +189,7 @@ export default function UserProfilePage() {
             <div className="w-20 h-20 bg-gradient-to-r from-purple-400 to-pink-400 rounded-full flex items-center justify-center text-white text-2xl font-bold">
               {user.avatar ? (
                 <img 
-                  src={`http://localhost:8000${user.avatar}`} 
+                  src={getImageUrl(user.avatar)} 
                   alt={user.name || 'User'}
                   className="w-20 h-20 rounded-full object-cover"
                 />

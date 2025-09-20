@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import api from '@/lib/api'
+import api, { getImageUrl, getApiBaseUrl } from '@/lib/api'
 import BottomNavigation from '@/components/BottomNavigation'
 
 interface Activity {
@@ -47,7 +47,7 @@ export default function ActivityPage() {
         return
       }
 
-      const response = await fetch('http://localhost:8000/activity', {
+      const response = await fetch(`${getApiBaseUrl()}/activity`, {
         headers: {
           'Authorization': `Bearer ${JSON.parse(user).token}`,
           'Content-Type': 'application/json',
@@ -91,7 +91,7 @@ export default function ActivityPage() {
           <div className="w-10 h-10 bg-gradient-to-r from-purple-400 to-pink-400 rounded-full flex items-center justify-center text-white font-bold">
             {user.avatar ? (
               <img 
-                src={`http://localhost:8000${user.avatar}`} 
+                src={getImageUrl(user.avatar)} 
                 alt={user.name || 'User'}
                 className="w-10 h-10 rounded-full object-cover"
               />

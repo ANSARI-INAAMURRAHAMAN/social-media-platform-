@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { io, Socket } from 'socket.io-client'
-import api from '@/lib/api'
+import api, { getImageUrl } from '@/lib/api'
 
 interface User {
   _id: string
@@ -366,7 +366,7 @@ export default function ChatPage() {
                     <div className="w-12 h-12 bg-gray-300 rounded-full flex items-center justify-center">
                       {otherUser?.avatar ? (
                         <img 
-                          src={`http://localhost:8000${otherUser.avatar}`} 
+                          src={getImageUrl(otherUser.avatar)} 
                           alt={otherUser.name}
                           className="w-12 h-12 rounded-full object-cover"
                         />
@@ -406,7 +406,7 @@ export default function ChatPage() {
               <div className="w-10 h-10 bg-gray-300 rounded-full flex items-center justify-center">
                 {getOtherParticipant(activeChat)?.avatar ? (
                   <img 
-                    src={`http://localhost:8000${getOtherParticipant(activeChat)?.avatar}`} 
+                    src={getImageUrl(getOtherParticipant(activeChat)?.avatar)} 
                     alt={getOtherParticipant(activeChat)?.name}
                     className="w-10 h-10 rounded-full object-cover"
                   />
@@ -540,7 +540,7 @@ export default function ChatPage() {
                     <div className="w-10 h-10 bg-gray-300 rounded-full flex items-center justify-center">
                       {user.avatar ? (
                         <img 
-                          src={`http://localhost:8000${user.avatar}`} 
+                          src={getImageUrl(user.avatar)} 
                           alt={user.name}
                           className="w-10 h-10 rounded-full object-cover"
                         />
